@@ -1,0 +1,1 @@
+-- Seed de GYMIA. Se completa en la fase de catálogo (docs/SPEC.md secciones 4 y 5).

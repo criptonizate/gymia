@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -24,8 +24,11 @@ import { readPresetCountdown } from "@/lib/preferences";
 import {
   applyProgression,
   finishSession,
-  logSet,
 } from "@/modules/workouts/actions";
+import {
+  logSetOffline,
+  startQueueSyncOnline,
+} from "@/modules/workouts/offline-queue";
 import {
   weightStep,
   type CurrentTarget,
@@ -60,6 +63,9 @@ export function SessionView({
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const [rest, setRest] = useState<{ seconds: number } | null>(null);
   const [presetSecs, setPresetSecs] = useState<number | null>(null);
+
+  // Arrancar sync offline al montar la vista
+  useEffect(() => startQueueSyncOnline(), []);
   const [holdOpen, setHoldOpen] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
@@ -142,8 +148,8 @@ export function SessionView({
       setRest({ seconds: current.descanso_seg });
     }
 
-    // Persistir
-    await logSet({
+    // Persistir (offline-queued si no hay conexión)
+    await logSetOffline({
       sessionId,
       routineExerciseId: current.id,
       exerciseId: activeExerciseId,
@@ -270,6 +276,11 @@ export function SessionView({
 
       {/* Info principal */}
       <section className="flex flex-col gap-2 px-4 pt-4">
+        {current.superset_group != null && (
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold text-primary">
+            Superset · {supersetLabel(ejercicios, current)}
+          </span>
+        )}
         <h1 className="text-xl font-bold leading-tight">{activeExercise.nombre}</h1>
         <p className="text-sm text-muted-foreground tabular-nums">
           {activeTipoRegistro === "tiempo"
@@ -470,6 +481,17 @@ function HoldTimerCta({
       )}
     </div>
   );
+}
+
+function supersetLabel(
+  ejercicios: RoutineExerciseRow[],
+  current: RoutineExerciseRow,
+): string {
+  const group = ejercicios.filter(
+    (e) => e.superset_group === current.superset_group,
+  );
+  const idx = group.findIndex((e) => e.id === current.id);
+  return group.map((_, i) => "A" + (i + 1) + (i === idx ? "*" : "")).join(" · ");
 }
 
 function overrideAsExercise(

@@ -13,6 +13,7 @@ export type RoutineExerciseRow = {
   peso_objetivo_kg: number | null;
   descanso_seg: number;
   notas: string | null;
+  superset_group: number | null;
   exercise: ExerciseWithRelations;
 };
 
@@ -69,7 +70,7 @@ export async function getActiveRoutine(): Promise<RoutineRow | null> {
     .from("routine_exercises")
     .select(
       `id, routine_day_id, exercise_id, orden, series, reps_min, reps_max,
-       duracion_seg, peso_objetivo_kg, descanso_seg, notas,
+       duracion_seg, peso_objetivo_kg, descanso_seg, notas, superset_group,
        exercise:exercises!inner(
          ${EX_COLS},
          muscle_group:muscle_groups!inner(id,nombre,slug),

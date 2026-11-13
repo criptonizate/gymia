@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Check, Zap } from "lucide-react";
 import { previewPlan, savePlan } from "@/modules/routines/actions";
 import type {
   DiasSemana,
@@ -26,6 +26,45 @@ const OBJETIVOS: { v: Objetivo; l: string }[] = [
   { v: "hipertrofia", l: "Hipertrofia" },
   { v: "fuerza", l: "Fuerza" },
   { v: "general", l: "General" },
+];
+
+type Preset = {
+  key: string;
+  label: string;
+  subtitle: string;
+  cfg: GeneratorConfig;
+};
+const PRESETS: Preset[] = [
+  {
+    key: "fb2-ppte",
+    label: "Full body · 2 días",
+    subtitle: "Principiante · 2 sem · acondicionamiento",
+    cfg: { diasPorSemana: 2, semanas: 2, nivel: "principiante", objetivo: "general" },
+  },
+  {
+    key: "fb3-ppte",
+    label: "Full body · 3 días",
+    subtitle: "Principiante · 4 sem · hipertrofia",
+    cfg: { diasPorSemana: 3, semanas: 4, nivel: "principiante", objetivo: "hipertrofia" },
+  },
+  {
+    key: "ppl3-int",
+    label: "Empuje / Tirón / Piernas · 3 días",
+    subtitle: "Intermedio · 4 sem · hipertrofia",
+    cfg: { diasPorSemana: 3, semanas: 4, nivel: "intermedio", objetivo: "hipertrofia" },
+  },
+  {
+    key: "ul4-int",
+    label: "Torso / Pierna · 4 días",
+    subtitle: "Intermedio · 4 sem · hipertrofia",
+    cfg: { diasPorSemana: 4, semanas: 4, nivel: "intermedio", objetivo: "hipertrofia" },
+  },
+  {
+    key: "ppl5-av",
+    label: "PPL + Torso/Pierna · 5 días",
+    subtitle: "Avanzado · 4 sem · fuerza",
+    cfg: { diasPorSemana: 5, semanas: 4, nivel: "avanzado", objetivo: "fuerza" },
+  },
 ];
 
 export function GenerarWizard() {
@@ -86,6 +125,37 @@ export function GenerarWizard() {
       <div className="flex-1 px-4 pb-4">
         {step === 0 && (
           <Step title="¿Cuántos días por semana vas a entrenar?">
+            <section className="flex flex-col gap-2">
+              <h3 className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                <Zap className="h-3.5 w-3.5 text-primary" />
+                O elegí una plantilla
+              </h3>
+              <div className="flex flex-col gap-2">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => {
+                      setCfg(p.cfg);
+                      start(async () => {
+                        const res = await previewPlan(p.cfg);
+                        if (!res.ok) setError(res.error);
+                        else {
+                          setPlan(res.data);
+                          setStep(4);
+                        }
+                      });
+                    }}
+                    className="flex flex-col items-start rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50"
+                  >
+                    <span className="text-sm font-semibold">{p.label}</span>
+                    <span className="text-xs text-muted-foreground">{p.subtitle}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+            <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />o armá uno<div className="h-px flex-1 bg-border" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {DIAS.map((d) => (
                 <BigPick

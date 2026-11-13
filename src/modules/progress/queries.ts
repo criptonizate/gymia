@@ -149,6 +149,30 @@ export async function getRecentSessions(daysBack = 30): Promise<RecentSession[]>
   });
 }
 
+export type WeekCompare = {
+  sesiones_actual: number;
+  sesiones_prev: number;
+  series_actual: number;
+  series_prev: number;
+  volumen_actual: number;
+  volumen_prev: number;
+};
+
+export async function getWeekCompare(): Promise<WeekCompare> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("user_week_compare");
+  return (
+    (data as WeekCompare | null) ?? {
+      sesiones_actual: 0,
+      sesiones_prev: 0,
+      series_actual: 0,
+      series_prev: 0,
+      volumen_actual: 0,
+      volumen_prev: 0,
+    }
+  );
+}
+
 export async function getExerciseEvolution(
   exerciseId: string,
 ): Promise<EvolutionPoint[]> {

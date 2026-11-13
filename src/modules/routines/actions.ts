@@ -202,6 +202,54 @@ export async function reorderExercise(
 }
 
 // -------------------------------------------------------------------------
+// Reordenar: aplica un orden nuevo para todas las filas de un día.
+// Hace dos pasadas (park → asignar) para no violar UNIQUE(day, orden).
+// -------------------------------------------------------------------------
+export async function reorderDay(
+  routineDayId: string,
+  orderedIds: string[],
+): Promise<Result> {
+  const supabase = await createClient();
+  const PARK = 9000;
+  // Parquear todos en órdenes altos únicos para evitar colisión
+  for (let i = 0; i < orderedIds.length; i++) {
+    await supabase
+      .from("routine_exercises")
+      .update({ orden: PARK + i })
+      .eq("id", orderedIds[i])
+      .eq("routine_day_id", routineDayId);
+  }
+  // Asignar el nuevo orden 1..n
+  for (let i = 0; i < orderedIds.length; i++) {
+    await supabase
+      .from("routine_exercises")
+      .update({ orden: i + 1 })
+      .eq("id", orderedIds[i])
+      .eq("routine_day_id", routineDayId);
+  }
+  revalidatePath("/rutina");
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------------------------
+// Supersets: agrupar/desagrupar ejercicios consecutivos.
+// -------------------------------------------------------------------------
+export async function setSupersetGroup(
+  routineExerciseIds: string[],
+  groupId: number | null,
+): Promise<Result> {
+  if (routineExerciseIds.length === 0) return { ok: true, data: undefined };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("routine_exercises")
+    .update({ superset_group: groupId })
+    .in("id", routineExerciseIds);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/rutina");
+  return { ok: true, data: undefined };
+}
+
+// -------------------------------------------------------------------------
 // Eliminar
 // -------------------------------------------------------------------------
 export async function removeExercise(routineExerciseId: string): Promise<Result> {

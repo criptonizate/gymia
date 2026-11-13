@@ -2,26 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ChevronUp,
-  ChevronDown,
-  MoreHorizontal,
-  Repeat,
-  Trash2,
-  Plus,
-  Sparkles,
-} from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
-import {
-  regenerateActive,
-  removeExercise,
-  reorderExercise,
-} from "@/modules/routines/actions";
-import type { RoutineRow } from "@/modules/routines/queries";
+import { regenerateActive } from "@/modules/routines/actions";
+import type { RoutineExerciseRow, RoutineRow } from "@/modules/routines/queries";
 import { SwapSheet } from "./swap-sheet";
 import { AddExerciseSheet } from "./add-sheet";
 import { ImportExportButtons } from "./import-export";
+import { SortableExerciseList } from "./sortable-list";
 
 type Props = { routine: RoutineRow };
 
@@ -31,7 +19,6 @@ export function RutinaView({ routine }: Props) {
     new Set(routine.dias.map((d) => d.semana)),
   ).sort();
   const [sem, setSem] = useState(semanas[0]);
-  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [swapFor, setSwapFor] = useState<{
     id: string;
     exId: string;
@@ -44,19 +31,6 @@ export function RutinaView({ routine }: Props) {
 
   const diasDeSemana = routine.dias.filter((d) => d.semana === sem);
 
-  function moveEx(id: string, direction: "up" | "down") {
-    start(async () => {
-      await reorderExercise(id, direction);
-      router.refresh();
-    });
-  }
-  function deleteEx(id: string) {
-    start(async () => {
-      await removeExercise(id);
-      router.refresh();
-      setMenuFor(null);
-    });
-  }
   function regen() {
     start(async () => {
       const res = await regenerateActive({
@@ -109,85 +83,18 @@ export function RutinaView({ routine }: Props) {
               <h2 className="text-sm font-semibold">{d.nombre}</h2>
             </header>
 
-            <ul className="flex flex-col gap-2">
-              {d.ejercicios.map((e, idx) => {
-                const isFirst = idx === 0;
-                const isLast = idx === d.ejercicios.length - 1;
-                return (
-                  <li
-                    key={e.id}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-background p-2"
-                  >
-                    <ExerciseMedia
-                      mediaUrl={e.exercise.media_url}
-                      frames={e.exercise.media_frames}
-                      muscleGroupSlug={e.exercise.muscle_group.slug}
-                      alt={e.exercise.nombre}
-                      className="h-12 w-12 flex-none rounded-lg"
-                      minimal
-                    />
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-sm font-medium">
-                        {e.exercise.nombre}
-                      </span>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {e.exercise.tipo_registro === "tiempo"
-                          ? `${e.series}×${e.duracion_seg}s`
-                          : `${e.series}×${e.reps_min}-${e.reps_max}`}
-                      </span>
-                    </div>
-                    <button
-                      aria-label="Más acciones"
-                      onClick={() => setMenuFor(e.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-
-                    <BottomSheet
-                      open={menuFor === e.id}
-                      onClose={() => setMenuFor(null)}
-                      title={e.exercise.nombre}
-                    >
-                      <div className="flex flex-col gap-2 pb-2">
-                        <MenuItem
-                          Icon={Repeat}
-                          onClick={() => {
-                            setMenuFor(null);
-                            setSwapFor({
-                              id: e.id,
-                              exId: e.exercise.id,
-                              patron: e.exercise.patron,
-                              mg: e.exercise.muscle_group.slug,
-                            });
-                          }}
-                          label="Cambiar ejercicio"
-                          hint="Otro del mismo patrón y grupo"
-                        />
-                        <MenuItem
-                          Icon={ChevronUp}
-                          disabled={isFirst || pending}
-                          onClick={() => moveEx(e.id, "up")}
-                          label="Subir"
-                        />
-                        <MenuItem
-                          Icon={ChevronDown}
-                          disabled={isLast || pending}
-                          onClick={() => moveEx(e.id, "down")}
-                          label="Bajar"
-                        />
-                        <MenuItem
-                          Icon={Trash2}
-                          onClick={() => deleteEx(e.id)}
-                          label="Eliminar"
-                          danger
-                        />
-                      </div>
-                    </BottomSheet>
-                  </li>
-                );
-              })}
-            </ul>
+            <SortableExerciseList
+              routineDayId={d.id}
+              ejercicios={d.ejercicios}
+              onOpenSwap={(e: RoutineExerciseRow) =>
+                setSwapFor({
+                  id: e.id,
+                  exId: e.exercise.id,
+                  patron: e.exercise.patron,
+                  mg: e.exercise.muscle_group.slug,
+                })
+              }
+            />
 
             <button
               onClick={() => setAddFor(d.id)}
@@ -262,39 +169,3 @@ export function RutinaView({ routine }: Props) {
   );
 }
 
-function MenuItem({
-  Icon,
-  label,
-  hint,
-  onClick,
-  danger = false,
-  disabled = false,
-}: {
-  Icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  hint?: string;
-  onClick: () => void;
-  danger?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={[
-        "flex min-h-12 items-center gap-3 rounded-xl border border-border bg-background px-4 text-left disabled:opacity-50",
-        danger ? "text-destructive" : "text-foreground",
-      ].join(" ")}
-    >
-      <Icon
-        className={`h-4 w-4 ${danger ? "text-destructive" : "text-primary"}`}
-      />
-      <span className="flex flex-col">
-        <span className="text-sm font-medium">{label}</span>
-        {hint && (
-          <span className="text-xs text-muted-foreground">{hint}</span>
-        )}
-      </span>
-    </button>
-  );
-}

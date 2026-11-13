@@ -13,6 +13,7 @@ import { EvolutionPicker } from "@/modules/progress/components/EvolutionPicker.l
 import { ProfileEditor } from "@/modules/progress/components/ProfileEditor";
 import { BodyWeightCard } from "@/modules/progress/components/BodyWeightCard";
 import { RecentSessionsCard } from "@/modules/progress/components/RecentSessionsCard";
+import { WeekCompareCard } from "@/modules/progress/components/WeekCompareCard";
 import { PresetCountdownToggle } from "@/components/preset-countdown-toggle";
 import {
   getBodyWeights,
@@ -21,23 +22,34 @@ import {
   getRecentSessions,
   getSetsByMuscle,
   getTrainingDays,
+  getWeekCompare,
   getWeeklyVolume,
 } from "@/modules/progress/queries";
 
 export const instant = false;
 
 export default async function CuentaPage() {
-  const [profile, kpis, days, weekly, byMuscle, records, bodyWeights, recent] =
-    await Promise.all([
-      getProfile(),
-      getKpis(),
-      getTrainingDays(120),
-      getWeeklyVolume(12),
-      getSetsByMuscle(7),
-      getExerciseRecords(),
-      getBodyWeights(30),
-      getRecentSessions(30),
-    ]);
+  const [
+    profile,
+    kpis,
+    days,
+    weekly,
+    byMuscle,
+    records,
+    bodyWeights,
+    recent,
+    weekCompare,
+  ] = await Promise.all([
+    getProfile(),
+    getKpis(),
+    getTrainingDays(120),
+    getWeeklyVolume(12),
+    getSetsByMuscle(7),
+    getExerciseRecords(),
+    getBodyWeights(30),
+    getRecentSessions(30),
+    getWeekCompare(),
+  ]);
 
   return (
     <main className="flex flex-col gap-6 p-4">
@@ -50,6 +62,7 @@ export default async function CuentaPage() {
           Resumen
         </h2>
         <KpiGrid data={kpis} />
+        <WeekCompareCard data={weekCompare} />
       </section>
 
       <section className="flex flex-col gap-3">

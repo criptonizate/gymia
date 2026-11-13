@@ -15,7 +15,12 @@ export default defineConfig({
     viewport: { width: 390, height: 844 },
   },
   projects: [
-    { name: "mobile", use: { ...devices["iPhone 13"] } },
+    {
+      name: "mobile-chromium",
+      use: {
+        ...devices["Pixel 5"], // Chromium móvil ≈ 393×851, evita necesidad de WebKit
+      },
+    },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

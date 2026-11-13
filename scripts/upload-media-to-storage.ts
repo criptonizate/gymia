@@ -2,12 +2,33 @@
 // y actualiza exercises.media_frames con las URLs del bucket GYMIA.
 //
 // Correr con:
-//   NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
-//     npx tsx scripts/upload-media-to-storage.ts
+//   npm run upload-media
+// (lee las credenciales desde .env.local automáticamente)
 //
-// Requiere crear el bucket 'exercise-media' (PÚBLICO) en Supabase Storage.
+// Requiere crear el bucket 'exercise-media' (PÚBLICO) en Supabase Storage,
+// y que .env.local tenga NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
+
+// ----- Carga rudimentaria de .env.local (no requiere dotenv) -----
+function loadEnvFile(path: string) {
+  if (!existsSync(path)) return;
+  const content = readFileSync(path, "utf8");
+  for (const raw of content.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/i);
+    if (!m) continue;
+    const [, k, v] = m;
+    if (process.env[k]) continue;
+    const unquoted = v.replace(/^["'](.+)["']$/, "$1");
+    process.env[k] = unquoted;
+  }
+}
+loadEnvFile(join(process.cwd(), ".env.local"));
+loadEnvFile(join(process.cwd(), ".env"));
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

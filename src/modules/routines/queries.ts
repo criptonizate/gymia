@@ -66,7 +66,7 @@ export async function getActiveRoutine(): Promise<RoutineRow | null> {
     .order("orden");
 
   const dayIds = (days ?? []).map((d) => d.id);
-  const { data: exs } = await supabase
+  const { data: exs, error: errExs } = await supabase
     .from("routine_exercises")
     .select(
       `id, routine_day_id, exercise_id, orden, series, reps_min, reps_max,
@@ -79,19 +79,46 @@ export async function getActiveRoutine(): Promise<RoutineRow | null> {
     )
     .in("routine_day_id", dayIds)
     .order("orden");
+  if (errExs) {
+    // Fallback si falta superset_group (migración wave_c no aplicada)
+    if (/superset_group/i.test(errExs.message)) {
+      const { data: exs2 } = await supabase
+        .from("routine_exercises")
+        .select(
+          `id, routine_day_id, exercise_id, orden, series, reps_min, reps_max,
+           duracion_seg, peso_objetivo_kg, descanso_seg, notas,
+           exercise:exercises!inner(
+             ${EX_COLS},
+             muscle_group:muscle_groups!inner(id,nombre,slug),
+             equipment:equipment!inner(id,nombre,slug)
+           )`,
+        )
+        .in("routine_day_id", dayIds)
+        .order("orden");
+      return assembleRoutine(routine, days ?? [], exs2 ?? []);
+    }
+    console.error("getActiveRoutine failed:", errExs);
+  }
 
+  return assembleRoutine(routine, days ?? [], exs ?? []);
+}
+
+function assembleRoutine(
+  routine: Record<string, unknown>,
+  days: Record<string, unknown>[],
+  exs: unknown[],
+): RoutineRow {
   const byDay = new Map<string, RoutineExerciseRow[]>();
-  for (const e of (exs ?? []) as unknown as RoutineExerciseRow[]) {
+  for (const e of exs as unknown as RoutineExerciseRow[]) {
     const arr = byDay.get(e.routine_day_id) ?? [];
     arr.push(e);
     byDay.set(e.routine_day_id, arr);
   }
-
   return {
-    ...(routine as RoutineRow),
-    dias: (days ?? []).map((d) => ({
-      ...(d as RoutineDayRow),
-      ejercicios: byDay.get(d.id) ?? [],
+    ...(routine as unknown as RoutineRow),
+    dias: days.map((d) => ({
+      ...(d as unknown as RoutineDayRow),
+      ejercicios: byDay.get((d as { id: string }).id) ?? [],
     })),
   };
 }

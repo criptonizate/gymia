@@ -14,6 +14,37 @@ const RE_COLS = `
     equipment:equipment!inner(id,nombre,slug)
   )
 `;
+const RE_COLS_LEGACY = `
+  id, routine_day_id, exercise_id, orden, series, reps_min, reps_max,
+  duracion_seg, peso_objetivo_kg, descanso_seg, notas,
+  exercise:exercises!inner(
+    ${EX_COLS},
+    muscle_group:muscle_groups!inner(id,nombre,slug),
+    equipment:equipment!inner(id,nombre,slug)
+  )
+`;
+
+async function selectRoutineExercises(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  dayIds: string[],
+) {
+  const { data, error } = await supabase
+    .from("routine_exercises")
+    .select(RE_COLS)
+    .in("routine_day_id", dayIds)
+    .order("orden");
+  if (!error) return data ?? [];
+  if (/superset_group/i.test(error.message)) {
+    const { data: fallback } = await supabase
+      .from("routine_exercises")
+      .select(RE_COLS_LEGACY)
+      .in("routine_day_id", dayIds)
+      .order("orden");
+    return fallback ?? [];
+  }
+  console.error("selectRoutineExercises:", error);
+  return [];
+}
 
 export type SetLog = {
   id: string;
@@ -127,13 +158,8 @@ export async function getTodayContext(): Promise<null | {
     };
   }
 
-  const { data: exs } = await supabase
-    .from("routine_exercises")
-    .select(RE_COLS)
-    .eq("routine_day_id", nextDayRaw.id)
-    .order("orden");
-
-  const typedExs = (exs ?? []) as unknown as RoutineExerciseRow[];
+  const exs = await selectRoutineExercises(supabase, [nextDayRaw.id]);
+  const typedExs = exs as unknown as RoutineExerciseRow[];
   const exerciseIds = typedExs.map((e) => e.exercise_id);
 
   // "Última vez" por ejercicio: los set_logs de la última session distinta
@@ -207,11 +233,7 @@ export async function getSessionContext(sessionId: string): Promise<null | {
     .maybeSingle();
   if (!day) return null;
 
-  const { data: exs } = await supabase
-    .from("routine_exercises")
-    .select(RE_COLS)
-    .eq("routine_day_id", day.id)
-    .order("orden");
+  const exs = await selectRoutineExercises(supabase, [day.id]);
 
   const { data: logs } = await supabase
     .from("set_logs")
@@ -219,7 +241,7 @@ export async function getSessionContext(sessionId: string): Promise<null | {
     .eq("session_id", sessionId)
     .order("numero_serie");
 
-  const typedExs = (exs ?? []) as unknown as RoutineExerciseRow[];
+  const typedExs = exs as unknown as RoutineExerciseRow[];
   const exIds = typedExs.map((e) => e.exercise_id);
   const { data: historical } = await supabase
     .from("set_logs")

@@ -72,3 +72,45 @@ npm run dev
 
 Abrir http://localhost:3000. Debería redirigir a `/hoy` y mostrar el placeholder.
 Correr `npm run test` para verificar que Vitest está OK.
+
+## Base de datos
+
+El esquema, las políticas RLS, los triggers y el seed están en `supabase/`.
+Para aplicarlos hay dos caminos:
+
+### Opción A — SQL Editor (más rápido para empezar)
+
+En el panel de Supabase → **SQL Editor**, ejecutar en orden:
+
+1. `supabase/migrations/20261113120000_schema.sql`
+2. `supabase/migrations/20261113120100_triggers.sql`
+3. `supabase/migrations/20261113120200_rls.sql`
+4. `supabase/seed.sql`
+
+### Opción B — Supabase CLI
+
+```bash
+npm i -g supabase            # (o scoop/brew, ver docs oficiales)
+supabase login
+supabase link --project-ref <REF>   # el REF está en el URL del dashboard
+supabase db push                    # aplica las migrations
+# Seed (la CLI no lo ejecuta sola en remoto):
+psql "$DATABASE_URL" -f supabase/seed.sql
+```
+
+### Verificar los links de media
+
+El seed referencia 142 imágenes de github.com/yuhonas/free-exercise-db.
+Antes de aplicarlo podés verificar que todas respondan 200:
+
+```bash
+npm run check-media
+```
+
+### Regenerar tipos TypeScript
+
+```bash
+SUPABASE_PROJECT_ID=<ref> npm run db:types
+```
+
+Esto sobreescribe `src/lib/supabase/database.types.ts`.

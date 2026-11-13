@@ -51,6 +51,12 @@ export type WorkoutSession = {
 export async function getTodayContext(): Promise<null | {
   routineId: string;
   routineName: string;
+  routineConfig: {
+    diasPorSemana: 2 | 3 | 4 | 5;
+    semanas: 1 | 2 | 3 | 4;
+    nivel: "principiante" | "intermedio" | "avanzado";
+    objetivo: "hipertrofia" | "fuerza" | "general";
+  };
   totalDias: number;
   completados: number;
   nextDay: {
@@ -71,7 +77,7 @@ export async function getTodayContext(): Promise<null | {
 
   const { data: routine } = await supabase
     .from("routines")
-    .select("id, nombre")
+    .select("id, nombre, dias_por_semana, semanas, nivel, objetivo")
     .eq("owner_id", user.id)
     .eq("activa", true)
     .maybeSingle();
@@ -101,10 +107,18 @@ export async function getTodayContext(): Promise<null | {
   const nextDayRaw = allDays.find((d) => !finishedDayIds.has(d.id));
   const planTerminado = !nextDayRaw;
 
+  const cfg = {
+    diasPorSemana: routine.dias_por_semana as 2 | 3 | 4 | 5,
+    semanas: routine.semanas as 1 | 2 | 3 | 4,
+    nivel: routine.nivel,
+    objetivo: routine.objetivo,
+  };
+
   if (!nextDayRaw) {
     return {
       routineId: routine.id,
       routineName: routine.nombre,
+      routineConfig: cfg,
       totalDias: allDays.length,
       completados,
       nextDay: null,
@@ -149,6 +163,7 @@ export async function getTodayContext(): Promise<null | {
   return {
     routineId: routine.id,
     routineName: routine.nombre,
+    routineConfig: cfg,
     totalDias: allDays.length,
     completados,
     nextDay: {

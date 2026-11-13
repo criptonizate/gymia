@@ -18,7 +18,9 @@ import { SetRow } from "@/modules/workouts/components/SetRow";
 import { RestTimer } from "@/modules/workouts/components/RestTimer";
 import { HoldTimer } from "@/modules/workouts/components/HoldTimer";
 import { BusyMachineSheet } from "@/modules/workouts/components/BusyMachineSheet";
+import { PresetCountdown } from "@/modules/workouts/components/PresetCountdown";
 import { ProgressionSheet } from "@/modules/workouts/components/ProgressionSheet";
+import { readPresetCountdown } from "@/lib/preferences";
 import {
   applyProgression,
   finishSession,
@@ -57,6 +59,7 @@ export function SessionView({
   const [logs, setLogs] = useState<SetLog[]>(initialLogs);
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const [rest, setRest] = useState<{ seconds: number } | null>(null);
+  const [presetSecs, setPresetSecs] = useState<number | null>(null);
   const [holdOpen, setHoldOpen] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
@@ -360,8 +363,20 @@ export function SessionView({
       {rest && (
         <RestTimer
           seconds={rest.seconds}
-          onDone={() => setRest(null)}
+          onDone={() => {
+            setRest(null);
+            const s = readPresetCountdown();
+            if (s > 0) setPresetSecs(s);
+          }}
           onDismiss={() => setRest(null)}
+        />
+      )}
+
+      {presetSecs && presetSecs > 0 && (
+        <PresetCountdown
+          seconds={presetSecs}
+          onDone={() => setPresetSecs(null)}
+          onCancel={() => setPresetSecs(null)}
         />
       )}
 
@@ -569,16 +584,62 @@ function SummaryOverlay({
           className="min-h-20 rounded-xl border border-border bg-card p-3 text-sm outline-none focus:border-primary"
         />
       </div>
-      <div className="mt-4">
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={() =>
+            shareSummary({
+              duracionMin: mins,
+              seriesCompletas,
+              seriesPlanificadas,
+              volumen,
+              records,
+            })
+          }
+          className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
+        >
+          Compartir
+        </button>
         <button
           onClick={() => onFinish(notas)}
-          className="min-h-14 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground"
+          className="min-h-14 flex-1 rounded-xl bg-primary text-base font-semibold text-primary-foreground"
         >
           Listo
         </button>
       </div>
     </div>
   );
+}
+
+async function shareSummary(s: {
+  duracionMin: number;
+  seriesCompletas: number;
+  seriesPlanificadas: number;
+  volumen: number;
+  records: string[];
+}) {
+  const lines = [
+    "GYMIA · resumen de hoy",
+    `⏱️ ${s.duracionMin} min`,
+    `✅ ${s.seriesCompletas}/${s.seriesPlanificadas} series`,
+    `🏋️ ${Math.round(s.volumen).toLocaleString("es-AR")} kg de volumen`,
+  ];
+  if (s.records.length) lines.push("✨ Récords: " + s.records.join(" · "));
+  const text = lines.join("\n");
+  const nav = navigator as unknown as { share?: (d: { text: string }) => Promise<void> };
+  if (nav.share) {
+    try {
+      await nav.share({ text });
+      return;
+    } catch {
+      // cancelado
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Resumen copiado al portapapeles");
+  } catch {
+    // ignore
+  }
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

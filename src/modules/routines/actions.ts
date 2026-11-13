@@ -284,3 +284,165 @@ export async function regenerateActive(
   if (!preview.ok) return preview;
   return savePlan(preview.data);
 }
+
+// -------------------------------------------------------------------------
+// Deload: genera 1 semana con series y peso objetivo reducidos ~40%.
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// Export: devuelve el plan de la rutina activa como JSON serializable.
+// -------------------------------------------------------------------------
+export async function exportActiveRoutine(): Promise<Result<RoutinePlan>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Hace falta iniciar sesión." };
+
+  const { data: routine } = await supabase
+    .from("routines")
+    .select("*")
+    .eq("owner_id", user.id)
+    .eq("activa", true)
+    .maybeSingle();
+  if (!routine) return { ok: false, error: "No hay rutina activa." };
+
+  const { data: days } = await supabase
+    .from("routine_days")
+    .select("id, semana, orden, nombre")
+    .eq("routine_id", routine.id)
+    .order("semana")
+    .order("orden");
+
+  const dayIds = (days ?? []).map((d) => d.id);
+  const { data: exs } = await supabase
+    .from("routine_exercises")
+    .select(
+      `routine_day_id, exercise_id, orden, series, reps_min, reps_max, duracion_seg, descanso_seg,
+       exercise:exercises!inner(slug, nombre, patron, tipo, tipo_registro,
+         muscle_group:muscle_groups!inner(slug),
+         equipment:equipment!inner(slug))`,
+    )
+    .in("routine_day_id", dayIds)
+    .order("orden");
+
+  type ExRow = {
+    routine_day_id: string;
+    exercise_id: string;
+    orden: number;
+    series: number;
+    reps_min: number | null;
+    reps_max: number | null;
+    duracion_seg: number | null;
+    descanso_seg: number;
+    exercise: {
+      slug: string;
+      nombre: string;
+      patron: string;
+      tipo: "compuesto" | "aislamiento";
+      tipo_registro: "peso_reps" | "reps" | "tiempo";
+      muscle_group: { slug: string };
+      equipment: { slug: string };
+    };
+  };
+
+  const byDay = new Map<string, ExRow[]>();
+  for (const e of (exs ?? []) as unknown as ExRow[]) {
+    const arr = byDay.get(e.routine_day_id) ?? [];
+    arr.push(e);
+    byDay.set(e.routine_day_id, arr);
+  }
+
+  const plan: RoutinePlan = {
+    nombre: routine.nombre,
+    split: routine.split,
+    dias_por_semana: routine.dias_por_semana,
+    semanas: routine.semanas,
+    nivel: routine.nivel,
+    objetivo: routine.objetivo,
+    dias: (days ?? []).map((d) => ({
+      semana: d.semana,
+      orden: d.orden,
+      nombre: d.nombre,
+      split_label: d.nombre,
+      ejercicios: (byDay.get(d.id) ?? []).map((e) => ({
+        orden: e.orden,
+        exercise_id: e.exercise_id,
+        exercise_slug: e.exercise.slug,
+        nombre: e.exercise.nombre,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        patron: e.exercise.patron as any,
+        tipo: e.exercise.tipo,
+        tipo_registro: e.exercise.tipo_registro,
+        muscle_group_slug: e.exercise.muscle_group.slug,
+        equipment_slug: e.exercise.equipment.slug,
+        series: e.series,
+        reps_min: e.reps_min ?? undefined,
+        reps_max: e.reps_max ?? undefined,
+        duracion_seg: e.duracion_seg ?? undefined,
+        descanso_seg: e.descanso_seg,
+      })),
+    })),
+  };
+
+  return { ok: true, data: plan };
+}
+
+// -------------------------------------------------------------------------
+// Import: mapea los slugs del JSON a exercise_id actuales y guarda.
+// -------------------------------------------------------------------------
+export async function importRoutineFromPlan(
+  rawPlan: unknown,
+): Promise<Result<{ routineId: string }>> {
+  if (!rawPlan || typeof rawPlan !== "object") {
+    return { ok: false, error: "JSON inválido." };
+  }
+  const plan = rawPlan as RoutinePlan;
+  if (!Array.isArray(plan.dias)) {
+    return { ok: false, error: "JSON sin días." };
+  }
+
+  const supabase = await createClient();
+  // Resolver IDs por slug
+  const slugs = Array.from(
+    new Set(plan.dias.flatMap((d) => d.ejercicios.map((e) => e.exercise_slug))),
+  );
+  const { data: exs } = await supabase
+    .from("exercises")
+    .select("id, slug")
+    .in("slug", slugs);
+  const idBySlug = new Map((exs ?? []).map((e) => [e.slug, e.id]));
+
+  for (const d of plan.dias) {
+    for (const e of d.ejercicios) {
+      const id = idBySlug.get(e.exercise_slug);
+      if (!id) {
+        return {
+          ok: false,
+          error: `Ejercicio no encontrado en el catálogo: ${e.exercise_slug}`,
+        };
+      }
+      e.exercise_id = id;
+    }
+  }
+
+  return savePlan(plan);
+}
+
+export async function generateDeload(
+  base: GeneratorConfig,
+): Promise<Result<{ routineId: string }>> {
+  const preview = await previewPlan({ ...base, semanas: 1 });
+  if (!preview.ok) return preview;
+  const plan = preview.data;
+  plan.nombre = `Deload · ${base.diasPorSemana}d/sem · ${base.nivel}`;
+  plan.split = `Descarga · ${plan.split}`;
+  for (const d of plan.dias) {
+    for (const e of d.ejercicios) {
+      e.series = Math.max(1, Math.ceil(e.series * 0.6));
+      if (e.duracion_seg != null) {
+        e.duracion_seg = Math.max(10, Math.round(e.duracion_seg * 0.6));
+      }
+    }
+  }
+  return savePlan(plan);
+}

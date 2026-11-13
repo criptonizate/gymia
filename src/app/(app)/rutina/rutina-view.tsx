@@ -21,6 +21,7 @@ import {
 import type { RoutineRow } from "@/modules/routines/queries";
 import { SwapSheet } from "./swap-sheet";
 import { AddExerciseSheet } from "./add-sheet";
+import { ImportExportButtons } from "./import-export";
 
 type Props = { routine: RoutineRow };
 
@@ -206,6 +207,8 @@ export function RutinaView({ routine }: Props) {
         <Sparkles className="h-4 w-4 text-primary" />
         Regenerar rutina
       </button>
+
+      <ImportExportButtons />
 
       {/* Sheets globales */}
       {swapFor && (

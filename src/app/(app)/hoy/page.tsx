@@ -5,6 +5,7 @@ import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { getProfile } from "@/lib/supabase/profile";
 import { getTodayContext } from "@/modules/workouts/queries";
 import { StartButton } from "./start-button";
+import { DeloadCta } from "./deload-cta";
 
 export const instant = false;
 
@@ -50,6 +51,16 @@ export default async function HoyPage() {
           body={`${ctx.completados} de ${ctx.totalDias} días hechos.`}
           cta={{ href: "/generar", label: "Generar el siguiente" }}
         />
+        <div className="px-4">
+          <DeloadCta
+            config={{
+              diasPorSemana: ctx.routineConfig.diasPorSemana,
+              semanas: 1,
+              nivel: ctx.routineConfig.nivel,
+              objetivo: ctx.routineConfig.objetivo,
+            }}
+          />
+        </div>
       </main>
     );
   }

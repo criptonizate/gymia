@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { muscleIcon } from "@/modules/exercises/muscle-icons";
@@ -12,6 +13,8 @@ type Props = {
   className?: string;
   /** Oculta el botón play/pause (útil para miniaturas). */
   minimal?: boolean;
+  /** Pista a next/image para elegir el srcset correcto. */
+  sizes?: string;
 };
 
 const INTERVAL_MS = 800;
@@ -23,6 +26,7 @@ export function ExerciseMedia({
   alt,
   className,
   minimal = false,
+  sizes = "(max-width: 448px) 100vw, 448px",
 }: Props) {
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -80,12 +84,15 @@ export function ExerciseMedia({
       }
       aria-label={paused ? `${alt} (pausado, tocá para reanudar)` : alt}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={src}
         alt={alt}
-        className="h-full w-full object-cover"
+        fill
+        sizes={sizes}
+        unoptimized={hasGif /* GIF animado no debe pasar por el optimizer */}
+        className="object-cover"
         draggable={false}
+        loading="lazy"
       />
       {!minimal && canAlternate && (
         <span className="pointer-events-none absolute bottom-1 right-1 rounded-full bg-black/55 p-1 text-white">

@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
         hostname: "raw.githubusercontent.com",
         pathname: "/yuhonas/free-exercise-db/**",
       },
+      {
+        // Storage del propio proyecto Supabase (cualquier project-ref)
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
   turbopack: {

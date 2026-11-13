@@ -161,8 +161,15 @@ export async function finishSession(
     .update(patch)
     .eq("id", sessionId);
   if (error) return { ok: false, error: error.message };
+  // Refresh de materialized views de stats (si existen). No bloquea si falla.
+  try {
+    await supabase.rpc("refresh_user_stats");
+  } catch {
+    /* MV todavía no creada, no pasa nada */
+  }
   revalidatePath("/hoy");
   revalidatePath("/rutina");
+  revalidatePath("/cuenta");
   return { ok: true, data: undefined };
 }
 

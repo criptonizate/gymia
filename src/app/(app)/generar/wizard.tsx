@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Sparkles, Check, Zap } from "lucide-react";
-import { previewPlan, savePlan } from "@/modules/routines/actions";
+import {
+  adjustVolume,
+  previewPlan,
+  savePlan,
+} from "@/modules/routines/actions";
+import type { VolumeMap } from "@/modules/routines/generator/volume";
+import { VolumeEditor } from "./volume-editor";
 import type {
   DiasSemana,
   GeneratorConfig,
@@ -244,6 +250,18 @@ export function GenerarWizard() {
               <h2 className="text-lg font-semibold">Previsualización</h2>
               <p className="text-sm text-muted-foreground">{plan.split}</p>
             </header>
+
+            <VolumeEditor
+              plan={plan}
+              config={cfg as GeneratorConfig}
+              pending={pending}
+              onApply={(target: VolumeMap) => {
+                start(async () => {
+                  const r = await adjustVolume(plan, target);
+                  if (r.ok) setPlan(r.data);
+                });
+              }}
+            />
 
             <div className="flex flex-col gap-4">
               {groupBySemana(plan).map(([sem, dias]) => (

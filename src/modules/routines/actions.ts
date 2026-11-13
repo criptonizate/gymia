@@ -9,6 +9,10 @@ import type {
   RoutinePlan,
 } from "@/modules/routines/generator/types";
 import { prescripcion } from "@/modules/routines/generator/prescription";
+import {
+  adjustPlanVolume,
+  type VolumeMap,
+} from "@/modules/routines/generator/volume";
 
 export type Result<T = void> =
   | { ok: true; data: T }
@@ -28,6 +32,21 @@ export async function previewPlan(
     seed ?? Math.floor(Math.random() * 2 ** 31),
   );
   return { ok: true, data: plan };
+}
+
+export async function adjustVolume(
+  plan: RoutinePlan,
+  target: VolumeMap,
+  seed?: number,
+): Promise<Result<RoutinePlan>> {
+  const catalog = await listExercises();
+  const adjusted = adjustPlanVolume(
+    plan,
+    target,
+    catalog,
+    seed ?? Math.floor(Math.random() * 2 ** 31),
+  );
+  return { ok: true, data: adjusted };
 }
 
 // -------------------------------------------------------------------------

@@ -1,7 +1,12 @@
-export default function LoginPage() {
-  return (
-    <main className="flex min-h-dvh items-center justify-center p-6">
-      <h1 className="text-2xl font-semibold">Login (placeholder)</h1>
-    </main>
-  );
+import { LoginForm } from "./login-form";
+
+export const instant = false;
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; error?: string }>;
+}) {
+  const { next = "/hoy" } = await searchParams;
+  return <LoginForm next={next} />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,18 +57,41 @@ export function SetRow({
     reps != null &&
     reps < objetivoRepsMin;
 
-  function toggleDone() {
-    const next = !done;
-    setDone(next);
-    onCommit({ peso_kg: peso, reps, completada: next });
+  // Debounce de 300 ms; el ✓ hace flush inmediato.
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function flush(values: {
+    peso_kg: number | null;
+    reps: number | null;
+    completada: boolean;
+  }) {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    onCommit(values);
   }
-
   function commit(values: {
     peso_kg: number | null;
     reps: number | null;
     completada: boolean;
   }) {
-    onCommit(values);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      onCommit(values);
+    }, 300);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  function toggleDone() {
+    const next = !done;
+    setDone(next);
+    flush({ peso_kg: peso, reps, completada: next });
   }
 
   return (

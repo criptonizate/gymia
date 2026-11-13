@@ -41,66 +41,38 @@ export async function savePlan(plan: RoutinePlan): Promise<Result<{ routineId: s
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Hace falta iniciar sesión." };
 
-  // Desactivar rutinas activas previas
-  await supabase
-    .from("routines")
-    .update({ activa: false })
-    .eq("owner_id", user.id)
-    .eq("activa", true);
-
-  // Crear routine
-  const { data: routine, error: errR } = await supabase
-    .from("routines")
-    .insert({
-      owner_id: user.id,
+  const { data, error } = await supabase.rpc("save_routine", {
+    payload: {
       nombre: plan.nombre,
       dias_por_semana: plan.dias_por_semana,
       semanas: plan.semanas,
       split: plan.split,
       nivel: plan.nivel,
       objetivo: plan.objetivo,
-      activa: true,
-    })
-    .select("id")
-    .single();
-  if (errR || !routine) return { ok: false, error: errR?.message ?? "No pude guardar la rutina." };
+      dias: plan.dias.map((d) => ({
+        semana: d.semana,
+        orden: d.orden,
+        nombre: d.nombre,
+        ejercicios: d.ejercicios.map((e) => ({
+          exercise_id: e.exercise_id,
+          orden: e.orden,
+          series: e.series,
+          reps_min: e.reps_min ?? "",
+          reps_max: e.reps_max ?? "",
+          duracion_seg: e.duracion_seg ?? "",
+          descanso_seg: e.descanso_seg,
+        })),
+      })),
+    },
+  });
 
-  // Crear días
-  const diasPayload = plan.dias.map((d) => ({
-    routine_id: routine.id,
-    semana: d.semana,
-    orden: d.orden,
-    nombre: d.nombre,
-  }));
-  const { data: days, error: errD } = await supabase
-    .from("routine_days")
-    .insert(diasPayload)
-    .select("id, semana, orden");
-  if (errD || !days) return { ok: false, error: errD?.message ?? "No pude guardar los días." };
-
-  // Crear ejercicios
-  const dayIdBySem = new Map<string, string>(
-    days.map((d) => [`${d.semana}-${d.orden}`, d.id]),
-  );
-  const exPayload = plan.dias.flatMap((d) =>
-    d.ejercicios.map((e) => ({
-      routine_day_id: dayIdBySem.get(`${d.semana}-${d.orden}`)!,
-      exercise_id: e.exercise_id,
-      orden: e.orden,
-      series: e.series,
-      reps_min: e.reps_min ?? null,
-      reps_max: e.reps_max ?? null,
-      duracion_seg: e.duracion_seg ?? null,
-      descanso_seg: e.descanso_seg,
-      peso_objetivo_kg: null,
-    })),
-  );
-  const { error: errE } = await supabase.from("routine_exercises").insert(exPayload);
-  if (errE) return { ok: false, error: errE.message };
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "No pude guardar la rutina." };
+  }
 
   revalidatePath("/rutina");
   revalidatePath("/hoy");
-  return { ok: true, data: { routineId: routine.id } };
+  return { ok: true, data: { routineId: data as string } };
 }
 
 // -------------------------------------------------------------------------

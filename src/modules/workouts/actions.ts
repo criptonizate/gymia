@@ -7,6 +7,7 @@ import {
   type Suggestion,
   type CurrentTarget,
 } from "./progression";
+import { LogSetInput as LogSetSchema, UpdateSetLogInput } from "@/lib/validation";
 
 export type Result<T = void> =
   | { ok: true; data: T }
@@ -64,6 +65,10 @@ export type LogSetInput = {
 };
 
 export async function logSet(input: LogSetInput): Promise<Result<{ id: string }>> {
+  const parsed = LogSetSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
   const supabase = await createClient();
   // UPSERT por (session_id, routine_exercise_id, numero_serie)
   const { data, error } = await supabase
@@ -117,15 +122,35 @@ export async function applyProgression(
 // -------------------------------------------------------------------------
 // Finalizar sesión
 // -------------------------------------------------------------------------
-export async function finishSession(sessionId: string): Promise<Result> {
+export async function finishSession(
+  sessionId: string,
+  notas?: string,
+): Promise<Result> {
   const supabase = await createClient();
+  const patch: Record<string, unknown> = {
+    finished_at: new Date().toISOString(),
+  };
+  if (notas !== undefined) patch.notas = notas.trim() || null;
   const { error } = await supabase
     .from("workout_sessions")
-    .update({ finished_at: new Date().toISOString() })
+    .update(patch)
     .eq("id", sessionId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/hoy");
   revalidatePath("/rutina");
+  return { ok: true, data: undefined };
+}
+
+export async function saveSessionNotas(
+  sessionId: string,
+  notas: string,
+): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("workout_sessions")
+    .update({ notas: notas.trim() || null })
+    .eq("id", sessionId);
+  if (error) return { ok: false, error: error.message };
   return { ok: true, data: undefined };
 }
 
@@ -194,8 +219,13 @@ export async function updateSetLog(
     completada?: boolean;
   },
 ): Promise<Result> {
+  const parsed = UpdateSetLogInput.safeParse({ id: setLogId, ...patch });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
+  const { id, ...rest } = parsed.data;
   const supabase = await createClient();
-  const { error } = await supabase.from("set_logs").update(patch).eq("id", setLogId);
+  const { error } = await supabase.from("set_logs").update(rest).eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: undefined };
 }

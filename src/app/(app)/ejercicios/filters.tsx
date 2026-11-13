@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, Star, X } from "lucide-react";
 import type { Equipment, MuscleGroup } from "@/modules/exercises/types";
 
 type Props = {
@@ -18,6 +18,7 @@ export function ExerciseFilters({ muscleGroups, equipment }: Props) {
   const q = searchParams.get("q") ?? "";
   const mg = searchParams.get("mg") ?? "";
   const eq = searchParams.get("eq") ?? "";
+  const fav = searchParams.get("fav") === "1";
 
   const [text, setText] = useState(q);
 
@@ -59,6 +60,20 @@ export function ExerciseFilters({ muscleGroups, equipment }: Props) {
         )}
       </label>
 
+      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <button
+          onClick={() => updateParam("fav", fav ? "" : "1")}
+          className={[
+            "flex min-h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition",
+            fav
+              ? "border-primary bg-[var(--primary-soft)] text-primary"
+              : "border-border bg-card text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+        >
+          <Star className={"h-3 w-3 " + (fav ? "fill-primary" : "")} />
+          Favoritos
+        </button>
+      </div>
       <ChipRow
         items={muscleGroups}
         active={mg}

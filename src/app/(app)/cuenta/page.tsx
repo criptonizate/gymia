@@ -2,12 +2,13 @@ import { LogOut } from "lucide-react";
 import { getProfile } from "@/lib/supabase/profile";
 import { signOut } from "@/lib/auth/actions";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UnitToggle } from "@/components/unit-toggle";
 import { KpiGrid } from "@/modules/progress/components/KpiGrid";
 import { Heatmap } from "@/modules/progress/components/Heatmap";
-import { WeeklyVolumeChart } from "@/modules/progress/components/WeeklyVolumeChart";
-import { MuscleGroupChart } from "@/modules/progress/components/MuscleGroupChart";
+import { WeeklyVolumeChart } from "@/modules/progress/components/WeeklyVolumeChart.lazy";
+import { MuscleGroupChart } from "@/modules/progress/components/MuscleGroupChart.lazy";
 import { RecordsList } from "@/modules/progress/components/RecordsList";
-import { EvolutionPicker } from "@/modules/progress/components/EvolutionPicker";
+import { EvolutionPicker } from "@/modules/progress/components/EvolutionPicker.lazy";
 import { ProfileEditor } from "@/modules/progress/components/ProfileEditor";
 import {
   getExerciseRecords,
@@ -72,6 +73,7 @@ export default async function CuentaPage() {
           Preferencias
         </h2>
         <ThemeToggle />
+        <UnitToggle />
       </section>
 
       <form action={signOut} className="mt-2">

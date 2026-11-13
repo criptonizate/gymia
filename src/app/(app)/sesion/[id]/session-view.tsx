@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -200,8 +200,8 @@ export function SessionView({
     else setSummaryOpen(true);
   }
 
-  async function onFinish() {
-    await finishSession(sessionId);
+  async function onFinish(notas?: string) {
+    await finishSession(sessionId, notas);
     router.push("/hoy");
   }
 
@@ -508,8 +508,9 @@ function SummaryOverlay({
   logs: SetLog[];
   ejercicios: RoutineExerciseRow[];
   lastLogsByExercise: Record<string, SetLog[]>;
-  onFinish: () => void;
+  onFinish: (notas?: string) => void;
 }) {
+  const [notas, setNotas] = useState("");
   const mins = Math.max(1, Math.round((Date.now() - new Date(startedAt).getTime()) / 60000));
   const seriesCompletas = logs.filter((l) => l.completada).length;
   const seriesPlanificadas = ejercicios.reduce((a, e) => a + e.series, 0);
@@ -557,9 +558,20 @@ function SummaryOverlay({
           ))}
         </ul>
       )}
-      <div className="mt-auto">
+      <div className="mt-4 flex flex-col gap-2">
+        <label className="text-xs text-muted-foreground">Notas (opcional)</label>
+        <textarea
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Cómo te sentiste, qué cambiar la próxima..."
+          rows={3}
+          maxLength={500}
+          className="min-h-20 rounded-xl border border-border bg-card p-3 text-sm outline-none focus:border-primary"
+        />
+      </div>
+      <div className="mt-4">
         <button
-          onClick={onFinish}
+          onClick={() => onFinish(notas)}
           className="min-h-14 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground"
         >
           Listo

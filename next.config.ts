@@ -1,9 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  compress: true,
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"],
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+        pathname: "/yuhonas/free-exercise-db/**",
+      },
+    ],
+  },
   turbopack: {
     rules: {
       "*.css": {

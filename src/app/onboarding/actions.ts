@@ -2,16 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { OnboardingInput } from "@/lib/validation";
 
 export async function saveOnboarding(formData: FormData) {
-  const nombre = String(formData.get("nombre") ?? "").trim();
-  const nivel = String(formData.get("nivel") ?? "");
-  const objetivo = String(formData.get("objetivo") ?? "");
-
-  if (!nombre || !["principiante", "intermedio", "avanzado"].includes(nivel) ||
-      !["hipertrofia", "fuerza", "general"].includes(objetivo)) {
-    return;
-  }
+  const parsed = OnboardingInput.safeParse({
+    nombre: formData.get("nombre"),
+    nivel: formData.get("nivel"),
+    objetivo: formData.get("objetivo"),
+  });
+  if (!parsed.success) return;
 
   const supabase = await createClient();
   const {
@@ -21,7 +20,7 @@ export async function saveOnboarding(formData: FormData) {
 
   await supabase
     .from("profiles")
-    .update({ nombre, nivel, objetivo })
+    .update(parsed.data)
     .eq("id", user.id);
 
   redirect("/hoy");

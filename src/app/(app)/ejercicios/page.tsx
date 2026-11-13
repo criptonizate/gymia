@@ -11,19 +11,25 @@ import { ExerciseFilters } from "./filters";
 
 export const instant = false;
 
-type SearchParams = Promise<{ q?: string; mg?: string; eq?: string }>;
+type SearchParams = Promise<{ q?: string; mg?: string; eq?: string; fav?: string }>;
 
 export default async function EjerciciosPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { q = "", mg = "", eq = "" } = await searchParams;
+  const { q = "", mg = "", eq = "", fav } = await searchParams;
+  const onlyFavorites = fav === "1";
 
   const [muscleGroups, equipment, exercises] = await Promise.all([
     listMuscleGroups(),
     listEquipment(),
-    listExercises({ q, muscleGroupSlug: mg, equipmentSlug: eq }),
+    listExercises({
+      q,
+      muscleGroupSlug: mg,
+      equipmentSlug: eq,
+      onlyFavorites,
+    }),
   ]);
 
   return (

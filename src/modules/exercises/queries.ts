@@ -31,6 +31,7 @@ export type ListExercisesFilters = {
   q?: string;
   muscleGroupSlug?: string;
   equipmentSlug?: string;
+  onlyFavorites?: boolean;
 };
 
 export async function listExercises(
@@ -55,7 +56,37 @@ export async function listExercises(
   }
 
   const { data } = await query;
-  return (data as unknown as ExerciseWithRelations[] | null) ?? [];
+  let list = (data as unknown as ExerciseWithRelations[] | null) ?? [];
+
+  if (filters.onlyFavorites) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data: favs } = await supabase
+      .from("user_exercise_favorites")
+      .select("exercise_id")
+      .eq("user_id", user.id);
+    const favSet = new Set((favs ?? []).map((f) => f.exercise_id));
+    list = list.filter((e) => favSet.has(e.id));
+  }
+
+  return list;
+}
+
+export async function isFavorite(exerciseId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase
+    .from("user_exercise_favorites")
+    .select("exercise_id")
+    .eq("user_id", user.id)
+    .eq("exercise_id", exerciseId)
+    .maybeSingle();
+  return !!data;
 }
 
 export async function getExerciseBySlug(

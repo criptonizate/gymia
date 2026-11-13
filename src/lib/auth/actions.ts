@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SignInInput, SignUpInput } from "@/lib/validation";
 
 export type AuthState = { error: string | null } | undefined;
 
@@ -10,35 +11,44 @@ export async function signInWithEmail(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/hoy");
+  const parsed = SignInInput.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    next: formData.get("next") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email: parsed.data.email,
+    password: parsed.data.password,
+  });
   if (error) return { error: error.message };
-  redirect(next);
+  redirect(parsed.data.next ?? "/hoy");
 }
 
 export async function signUpWithEmail(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const nombre = String(formData.get("nombre") ?? "").trim();
-
-  if (password.length < 8) {
-    return { error: "La contraseña tiene que tener al menos 8 caracteres." };
+  const parsed = SignUpInput.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    nombre: formData.get("nombre") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
 
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? "";
   const { error } = await supabase.auth.signUp({
-    email,
-    password,
+    email: parsed.data.email,
+    password: parsed.data.password,
     options: {
-      data: { nombre },
+      data: { nombre: parsed.data.nombre },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });

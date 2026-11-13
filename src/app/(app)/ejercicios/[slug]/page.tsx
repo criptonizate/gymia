@@ -4,10 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import {
   getExerciseBySlug,
   getUserExerciseVideo,
+  isFavorite,
 } from "@/modules/exercises/queries";
 import { ExerciseHero } from "@/modules/exercises/components/ExerciseHero";
 import { YoutubeBlock } from "@/modules/exercises/components/YoutubeBlock";
 import { History } from "@/modules/exercises/components/History";
+import { FavoriteButton } from "@/modules/exercises/components/FavoriteButton";
 import { getExerciseHistory } from "@/modules/workouts/queries";
 
 export const instant = false;
@@ -27,15 +29,16 @@ export default async function EjercicioDetallePage({
   const ex = await getExerciseBySlug(slug);
   if (!ex) notFound();
 
-  const [userVideoId, history] = await Promise.all([
+  const [userVideoId, history, favorito] = await Promise.all([
     getUserExerciseVideo(ex.id),
     getExerciseHistory(ex.id, 10),
+    isFavorite(ex.id),
   ]);
   const effectiveVideoId = userVideoId ?? ex.youtube_video_id ?? null;
 
   return (
     <main className="flex flex-col gap-6 p-4 pb-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Link
           href="/ejercicios"
           className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card"
@@ -43,9 +46,16 @@ export default async function EjercicioDetallePage({
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-          {NIVEL_LABEL[ex.nivel_minimo]}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+            {NIVEL_LABEL[ex.nivel_minimo]}
+          </span>
+          <FavoriteButton
+            exerciseId={ex.id}
+            exerciseSlug={ex.slug}
+            initial={favorito}
+          />
+        </div>
       </div>
 
       <ExerciseHero

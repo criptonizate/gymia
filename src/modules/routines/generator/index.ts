@@ -1,2 +1,4 @@
-// Lógica pura del generador de rutinas. Ver docs/SPEC.md sección 6.
-export {};
+export * from "./types";
+export * from "./rule-based";
+export * from "./templates";
+export * from "./prescription";

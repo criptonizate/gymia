@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, LineChart } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
   getExerciseBySlug,
   getUserExerciseVideo,
 } from "@/modules/exercises/queries";
 import { ExerciseHero } from "@/modules/exercises/components/ExerciseHero";
 import { YoutubeBlock } from "@/modules/exercises/components/YoutubeBlock";
-import { EmptyState } from "@/components/empty-state";
+import { History } from "@/modules/exercises/components/History";
+import { getExerciseHistory } from "@/modules/workouts/queries";
 
 export const instant = false;
 
@@ -26,7 +27,10 @@ export default async function EjercicioDetallePage({
   const ex = await getExerciseBySlug(slug);
   if (!ex) notFound();
 
-  const userVideoId = await getUserExerciseVideo(ex.id);
+  const [userVideoId, history] = await Promise.all([
+    getUserExerciseVideo(ex.id),
+    getExerciseHistory(ex.id, 10),
+  ]);
   const effectiveVideoId = userVideoId ?? ex.youtube_video_id ?? null;
 
   return (
@@ -115,11 +119,7 @@ export default async function EjercicioDetallePage({
         <h2 className="text-sm font-semibold text-muted-foreground">
           Historial
         </h2>
-        <EmptyState
-          Icon={LineChart}
-          title="Sin historial todavía"
-          body="Cuando registres sesiones vas a ver acá tu progreso."
-        />
+        <History tipoRegistro={ex.tipo_registro} entries={history} />
       </section>
     </main>
   );

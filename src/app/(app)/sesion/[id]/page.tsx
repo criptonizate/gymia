@@ -1,3 +1,7 @@
+import { notFound, redirect } from "next/navigation";
+import { getSessionContext } from "@/modules/workouts/queries";
+import { SessionView } from "./session-view";
+
 export const instant = false;
 
 export default async function SesionPage({
@@ -6,9 +10,21 @@ export default async function SesionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const ctx = await getSessionContext(id);
+  if (!ctx) notFound();
+  if (ctx.session.finished_at) {
+    // Sesión ya terminada: por ahora se vuelve a Hoy. (La edición del
+    // historial se accede desde el detalle del ejercicio.)
+    redirect("/hoy");
+  }
   return (
-    <main className="mx-auto w-full max-w-md p-4">
-      <h1 className="text-2xl font-semibold">Sesión {id}</h1>
-    </main>
+    <SessionView
+      sessionId={ctx.session.id}
+      startedAt={ctx.session.started_at}
+      dayNombre={ctx.day.nombre}
+      ejercicios={ctx.day.ejercicios}
+      logs={ctx.logs}
+      lastLogsByExercise={ctx.lastLogsByExercise}
+    />
   );
 }

@@ -145,7 +145,8 @@ export function suggestOnNoLlegar(
   const nuevoPeso = Math.max(0, round(curPeso - step, step));
   const curRepsMin = target.reps_min ?? 8;
   const curRepsMax = target.reps_max ?? 12;
-  const nuevaRepsMax = Math.max(curRepsMin, curRepsMax - 2);
+  const nuevaRepsMax = Math.max(1, curRepsMax - 2);
+  // reps_min nunca puede quedar undefined/null ni mayor que reps_max
   const nuevaRepsMin = Math.max(1, Math.min(curRepsMin, nuevaRepsMax));
 
   return {

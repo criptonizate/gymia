@@ -170,9 +170,9 @@ function Field({
       <button
         onClick={() => bump(-step)}
         aria-label={`Menos ${step} ${label}`}
-        className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
+        className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
       >
-        <Minus className="h-3.5 w-3.5" />
+        <Minus className="h-4 w-4" />
       </button>
       <label className="flex min-w-0 flex-1 flex-col text-center">
         <input
@@ -196,9 +196,9 @@ function Field({
       <button
         onClick={() => bump(step)}
         aria-label={`Más ${step} ${label}`}
-        className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
+        className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="h-4 w-4" />
       </button>
     </div>
   );

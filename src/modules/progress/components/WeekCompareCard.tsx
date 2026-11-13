@@ -45,8 +45,9 @@ function Metric({
   suffix?: string;
   thousand?: boolean;
 }) {
+  const sinBase = prev === 0;
   const delta = actual - prev;
-  const pct = prev === 0 ? (actual > 0 ? 100 : 0) : Math.round(((actual - prev) / prev) * 100);
+  const pct = sinBase ? 0 : Math.round(((actual - prev) / prev) * 100);
   const Icon = delta === 0 ? Minus : delta > 0 ? ArrowUp : ArrowDown;
   const color =
     delta === 0
@@ -64,10 +65,14 @@ function Metric({
         {value}
         {suffix ? ` ${suffix}` : ""}
       </span>
-      <span className={`flex items-center gap-0.5 text-[11px] ${color}`}>
-        <Icon className="h-3 w-3" />
-        {Math.abs(pct)}%
-      </span>
+      {sinBase ? (
+        <span className="text-[11px] text-muted-foreground">sin base previa</span>
+      ) : (
+        <span className={`flex items-center gap-0.5 text-[11px] ${color}`}>
+          <Icon className="h-3 w-3" />
+          {Math.abs(pct)}%
+        </span>
+      )}
     </div>
   );
 }

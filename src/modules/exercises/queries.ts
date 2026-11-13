@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { unwrap } from "@/lib/supabase/errors";
 import type {
   Equipment,
   Exercise,
@@ -11,19 +12,19 @@ const BASE_COLS =
 
 export async function listMuscleGroups(): Promise<MuscleGroup[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("muscle_groups")
-    .select("id, nombre, slug")
-    .order("nombre");
+  const data = unwrap(
+    await supabase.from("muscle_groups").select("id, nombre, slug").order("nombre"),
+    "listMuscleGroups",
+  );
   return (data as MuscleGroup[] | null) ?? [];
 }
 
 export async function listEquipment(): Promise<Equipment[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("equipment")
-    .select("id, nombre, slug")
-    .order("nombre");
+  const data = unwrap(
+    await supabase.from("equipment").select("id, nombre, slug").order("nombre"),
+    "listEquipment",
+  );
   return (data as Equipment[] | null) ?? [];
 }
 

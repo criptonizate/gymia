@@ -5,8 +5,13 @@ const APP_PATHS = ["/hoy", "/rutina", "/ejercicios", "/cuenta", "/sesion", "/gen
 const PUBLIC_AUTH_PATHS = ["/login"];
 const ONBOARDING_PATH = "/onboarding";
 
+/** Coincide sólo con `/base` o `/base/sub…`, nunca con `/basexxx`. */
 function matches(pathname: string, bases: string[]) {
-  return bases.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  return bases.some((p) => {
+    if (pathname === p) return true;
+    if (pathname.startsWith(p + "/")) return true;
+    return false;
+  });
 }
 
 export async function updateSession(request: NextRequest) {

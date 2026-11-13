@@ -143,8 +143,12 @@ export function SessionView({
     if (Math.abs(dx) < 60) return;
     // Horizontal real: X tiene que dominar sobre Y
     if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (dx < 0 && i < ejercicios.length - 1) setI(i + 1);
-    if (dx > 0 && i > 0) setI(i - 1);
+    if (dx < 0 && i < ejercicios.length - 1) {
+      setI(i + 1); setRest(null); setPresetSecs(null);
+    }
+    if (dx > 0 && i > 0) {
+      setI(i - 1); setRest(null); setPresetSecs(null);
+    }
   }
 
   // Optimistic + server save
@@ -162,7 +166,7 @@ export function SessionView({
           ),
       );
       next.push({
-        id: `tmp-${current.id}-${serieNumero}`,
+        id: `tmp-${current.id}-${serieNumero}-${Date.now()}`,
         session_id: sessionId,
         routine_exercise_id: current.id,
         exercise_id: activeExerciseId,
@@ -249,6 +253,8 @@ export function SessionView({
         s,
       );
     }
+    setRest(null);
+    setPresetSecs(null);
     if (i < ejercicios.length - 1) setI(i + 1);
     else setSummaryOpen(true);
   }
@@ -388,18 +394,22 @@ export function SessionView({
       {/* Nav flotante */}
       <nav className="sticky bottom-20 flex items-center justify-between gap-2 px-4 pb-2">
         <button
-          onClick={() => i > 0 && setI(i - 1)}
+          onClick={() => {
+            if (i > 0) { setI(i - 1); setRest(null); setPresetSecs(null); }
+          }}
           disabled={i === 0}
           aria-label="Anterior"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card disabled:opacity-40"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card disabled:opacity-40"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => i < ejercicios.length - 1 && setI(i + 1)}
+          onClick={() => {
+            if (i < ejercicios.length - 1) { setI(i + 1); setRest(null); setPresetSecs(null); }
+          }}
           disabled={i >= ejercicios.length - 1}
           aria-label="Siguiente"
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card disabled:opacity-40"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card disabled:opacity-40"
         >
           <ChevronRight className="h-5 w-5" />
         </button>

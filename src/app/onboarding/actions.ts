@@ -18,10 +18,10 @@ export async function saveOnboarding(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Upsert por si el trigger handle_new_user falló y no hay row aún.
   await supabase
     .from("profiles")
-    .update(parsed.data)
-    .eq("id", user.id);
+    .upsert({ id: user.id, ...parsed.data }, { onConflict: "id" });
 
   redirect("/hoy");
 }

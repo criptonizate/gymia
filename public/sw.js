@@ -1,12 +1,7 @@
-// GYMIA service worker — cache-first para shell, network-first para datos.
+// GYMIA service worker.
 // Bump de versión para invalidar caches viejos.
-const VERSION = "gymia-v1";
+const VERSION = "gymia-v2";
 const SHELL = [
-  "/",
-  "/hoy",
-  "/rutina",
-  "/ejercicios",
-  "/cuenta",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-maskable.svg",
@@ -16,7 +11,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(VERSION);
-      // Pre-cache best-effort: ignorar errores por si falla la red al instalar
       try {
         await cache.addAll(SHELL);
       } catch {
@@ -44,17 +38,19 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // Evitar APIs y Supabase
   if (
     url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/") ||
     url.hostname.includes("supabase")
   ) {
     return;
   }
 
-  // Imágenes/estáticos → cache-first
-  if (/\.(?:png|jpg|jpeg|webp|avif|gif|svg|woff2?|css|js|ico)$/.test(url.pathname) ||
-      url.hostname.includes("raw.githubusercontent.com")) {
+  // Imágenes/estáticos: cache-first
+  if (
+    /\.(?:png|jpg|jpeg|webp|avif|gif|svg|woff2?|css|js|ico)$/.test(url.pathname) ||
+    url.hostname.includes("raw.githubusercontent.com")
+  ) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(req);
@@ -74,18 +70,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Páginas: network-first con fallback a cache
+  // Páginas de app: NO se cachea porque el HTML trae datos del usuario
+  // logeado. Caerle con offline-first filtraría datos a otro user del mismo
+  // dispositivo. Dejamos que la red/CDN de Vercel maneje el caché privado.
   if (req.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
-          const res = await fetch(req);
-          const cache = await caches.open(VERSION);
-          cache.put(req, res.clone());
-          return res;
+          return await fetch(req);
         } catch {
-          const cached = await caches.match(req);
-          return cached ?? caches.match("/hoy") ?? Response.error();
+          // Fallback mínimo: una página en blanco con un mensaje. No tocamos
+          // caches.match() para no servir datos de otro user.
+          return new Response(
+            `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexión · GYMIA</title><body style="background:#0a0a0b;color:#f2f4f7;font-family:system-ui;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:1.5rem;text-align:center"><div><h1 style="color:#38bdf8;margin:0 0 .5rem">Sin conexión</h1><p style="opacity:.7">Volvé a intentarlo cuando tengas internet.</p></div>`,
+            { headers: { "Content-Type": "text/html; charset=utf-8" } },
+          );
         }
       })(),
     );

@@ -31,6 +31,8 @@ export function WeeklyVolumeChart({ data }: { data: WeeklyVolume[] }) {
               tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
               axisLine={false}
               tickLine={false}
+              interval="preserveStartEnd"
+              minTickGap={14}
             />
             <YAxis
               tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}

@@ -124,7 +124,7 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
             </>
           )}
           {phase === "countdown" && (
-            <span className="text-8xl font-extrabold tabular-nums text-primary">
+            <span className="text-7xl font-extrabold tracking-tighter tabular-nums text-primary">
               {countdown || "¡YA!"}
             </span>
           )}

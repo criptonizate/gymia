@@ -146,7 +146,8 @@ export function RutinaView({ routine }: Props) {
             Vas a reemplazar la rutina actual por una nueva con la misma
             configuración ({routine.dias_por_semana}d/sem · {routine.semanas}{" "}
             sem · {routine.nivel} · {routine.objetivo}). La anterior quedará
-            inactiva.
+            inactiva y se van a <strong>perder los supersets, el reorden y los
+            cambios manuales</strong> de ejercicios.
           </p>
           <div className="flex gap-2">
             <button

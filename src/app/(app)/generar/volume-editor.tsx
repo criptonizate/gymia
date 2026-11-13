@@ -115,9 +115,9 @@ export function VolumeEditor({ plan, config, onApply, pending }: Props) {
                   <button
                     aria-label={`-1 ${k}`}
                     onClick={() => bump(k, -1)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
                   >
-                    <Minus className="h-3.5 w-3.5" />
+                    <Minus className="h-4 w-4" />
                   </button>
                   <span className="w-6 text-center text-base font-bold tabular-nums">
                     {target[k]}
@@ -125,9 +125,9 @@ export function VolumeEditor({ plan, config, onApply, pending }: Props) {
                   <button
                     aria-label={`+1 ${k}`}
                     onClick={() => bump(k, 1)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
               </li>

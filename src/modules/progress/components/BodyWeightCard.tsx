@@ -8,7 +8,10 @@ import type { BodyWeightEntry } from "@/modules/progress/queries";
 type Props = { entries: BodyWeightEntry[] };
 
 export function BodyWeightCard({ entries }: Props) {
-  const today = new Date().toISOString().slice(0, 10);
+  // Fecha LOCAL (no UTC) para que un registro a las 22hs ARG no termine
+  // guardado como el día siguiente.
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const [kg, setKg] = useState("");
   const [fecha, setFecha] = useState(today);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export function BodyWeightCard({ entries }: Props) {
           value={fecha}
           max={today}
           onChange={(e) => setFecha(e.target.value)}
-          className="min-h-11 flex-1 rounded-lg border border-border bg-background px-2 text-sm outline-none focus:border-primary"
+          className="min-h-11 flex-1 rounded-lg border border-border bg-background px-2 text-base outline-none focus:border-primary"
         />
         <input
           type="number"
@@ -81,7 +84,7 @@ export function BodyWeightCard({ entries }: Props) {
           placeholder="kg"
           value={kg}
           onChange={(e) => setKg(e.target.value)}
-          className="min-h-11 w-20 rounded-lg border border-border bg-background px-2 text-center text-sm tabular-nums outline-none focus:border-primary"
+          className="min-h-11 w-20 rounded-lg border border-border bg-background px-2 text-center text-base tabular-nums outline-none focus:border-primary"
         />
         <button
           onClick={onSave}

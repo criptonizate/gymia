@@ -25,25 +25,48 @@ export async function startOrContinueSession(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Hace falta iniciar sesión." };
 
-  // ¿Hay una sesión abierta del mismo user?
+  // ¿Hay una sesión abierta del mismo user? Si su día pertenece a una
+  // rutina inactiva (porque regeneraste), cerrala y creá una nueva.
   const { data: open } = await supabase
     .from("workout_sessions")
-    .select("id, routine_day_id")
+    .select(
+      "id, routine_day_id, day:routine_days!inner(routine:routines!inner(activa))",
+    )
     .eq("user_id", user.id)
     .is("finished_at", null)
     .maybeSingle();
-  if (open) return { ok: true, data: { sessionId: open.id } };
+  if (open) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const activa = (open as any).day?.routine?.activa === true;
+    if (activa) return { ok: true, data: { sessionId: open.id } };
+    await supabase
+      .from("workout_sessions")
+      .update({ finished_at: new Date().toISOString() })
+      .eq("id", open.id);
+  }
 
   const { data: created, error } = await supabase
     .from("workout_sessions")
     .insert({ user_id: user.id, routine_day_id: routineDayId })
     .select("id")
-    .single();
-  if (error || !created) return { ok: false, error: error?.message ?? "No pude empezar la sesión." };
-
-  revalidatePath("/hoy");
-  revalidatePath(`/sesion/${created.id}`);
-  return { ok: true, data: { sessionId: created.id } };
+    .maybeSingle();
+  if (!error && created) {
+    revalidatePath("/hoy");
+    revalidatePath(`/sesion/${created.id}`);
+    return { ok: true, data: { sessionId: created.id } };
+  }
+  // Si el unique partial de "una sesión abierta" rechazó por carrera,
+  // leer la existente y devolverla.
+  if (error && error.code === "23505") {
+    const { data: again } = await supabase
+      .from("workout_sessions")
+      .select("id")
+      .eq("user_id", user.id)
+      .is("finished_at", null)
+      .maybeSingle();
+    if (again) return { ok: true, data: { sessionId: again.id } };
+  }
+  return { ok: false, error: error?.message ?? "No pude empezar la sesión." };
 }
 
 // -------------------------------------------------------------------------
@@ -70,7 +93,9 @@ export async function logSet(input: LogSetInput): Promise<Result<{ id: string }>
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   }
   const supabase = await createClient();
-  // UPSERT por (session_id, routine_exercise_id, numero_serie)
+  // UPSERT por (session_id, routine_exercise_id, numero_serie).
+  // Usamos maybeSingle() para no romper si el UPSERT no cambia nada y PostgREST
+  // decide no devolver filas (PGRST116).
   const { data, error } = await supabase
     .from("set_logs")
     .upsert(
@@ -91,9 +116,9 @@ export async function logSet(input: LogSetInput): Promise<Result<{ id: string }>
       { onConflict: "session_id,routine_exercise_id,numero_serie" },
     )
     .select("id")
-    .single();
-  if (error || !data) return { ok: false, error: error?.message ?? "No pude guardar la serie." };
-  return { ok: true, data: { id: data.id } };
+    .maybeSingle();
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: { id: data?.id ?? "upserted" } };
 }
 
 // -------------------------------------------------------------------------
@@ -225,7 +250,32 @@ export async function updateSetLog(
   }
   const { id, ...rest } = parsed.data;
   const supabase = await createClient();
-  const { error } = await supabase.from("set_logs").update(rest).eq("id", id);
+
+  // Coherencia con el tipo_registro del exercise: nulear campos que no aplican
+  // (sino queda data basura que infla PRs y volumen).
+  const { data: log } = await supabase
+    .from("set_logs")
+    .select("exercise:exercises!inner(tipo_registro)")
+    .eq("id", id)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tipo = (log as any)?.exercise?.tipo_registro as
+    | "peso_reps"
+    | "reps"
+    | "tiempo"
+    | undefined;
+  const sanitized: Record<string, unknown> = { ...rest };
+  if (tipo === "tiempo") {
+    sanitized.peso_kg = null;
+    sanitized.reps = null;
+  } else if (tipo === "reps") {
+    sanitized.peso_kg = null;
+    sanitized.duracion_seg = null;
+  } else if (tipo === "peso_reps") {
+    sanitized.duracion_seg = null;
+  }
+
+  const { error } = await supabase.from("set_logs").update(sanitized).eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: undefined };
 }

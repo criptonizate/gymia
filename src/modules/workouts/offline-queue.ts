@@ -1,16 +1,19 @@
 // Cola offline para logSet. Guarda los sets pendientes en IndexedDB
-// y los reenvía apenas vuelve la red. Si fallan por auth u otro, los
-// deja para el próximo intento. Sin dependencias externas.
+// y los reenvía apenas vuelve la red, sólo si el user actual coincide
+// con el que los generó (evita fugas cross-user en el mismo browser).
 
 import type { LogSetInput } from "./actions";
 import { logSet } from "./actions";
+import { createClient } from "@/lib/supabase/client";
 
 const DB_NAME = "gymia-offline";
 const DB_VERSION = 1;
 const STORE = "log_set_queue";
+const MAX_TRIES = 5;
 
 type Entry = {
-  id: string; // client-generated
+  id: string;
+  user_id: string;
   payload: LogSetInput;
   tries: number;
   created_at: number;
@@ -78,6 +81,30 @@ async function update(entry: Entry): Promise<void> {
   });
 }
 
+/** Borra TODO el store. Llamar en signOut y al cambiar de user. */
+export async function clearOfflineQueue(): Promise<void> {
+  try {
+    await withStore("readwrite", (store) => {
+      store.clear();
+    });
+  } catch {
+    // noop
+  }
+}
+
+async function currentUserId(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 let drainingPromise: Promise<void> | null = null;
 
 export async function drainQueue(): Promise<void> {
@@ -86,16 +113,25 @@ export async function drainQueue(): Promise<void> {
   if (drainingPromise) return drainingPromise;
   drainingPromise = (async () => {
     try {
+      const uid = await currentUserId();
+      if (!uid) return;
       const items = await getAll();
       for (const it of items) {
+        // Namespacing: no reenviar items de OTRO user con las credenciales de este.
+        if (it.user_id !== uid) {
+          if (it.tries + 1 >= MAX_TRIES) await remove(it.id);
+          else await update({ ...it, tries: it.tries + 1 });
+          continue;
+        }
         const r = await logSet(it.payload);
         if (r.ok) {
           await remove(it.id);
         } else {
           await update({ ...it, tries: it.tries + 1 });
-          // si no es un fallo de red, no ciclar infinito: después de 5 intentos descarta
-          if (it.tries + 1 >= 5) await remove(it.id);
-          break;
+          if (it.tries + 1 >= MAX_TRIES) await remove(it.id);
+          // Seguimos con el siguiente en vez de abortar: un item roto
+          // no debe bloquear a los demás.
+          continue;
         }
       }
     } finally {
@@ -106,12 +142,14 @@ export async function drainQueue(): Promise<void> {
 }
 
 export async function logSetOffline(payload: LogSetInput): Promise<{ ok: true }> {
+  const uid = (await currentUserId()) ?? "anon";
   if (typeof window !== "undefined" && navigator.onLine) {
     const r = await logSet(payload);
     if (r.ok) return { ok: true };
   }
   const entry: Entry = {
     id: `${payload.sessionId}:${payload.routineExerciseId}:${payload.numeroSerie}:${Date.now()}`,
+    user_id: uid,
     payload,
     tries: 0,
     created_at: Date.now(),
@@ -119,7 +157,6 @@ export async function logSetOffline(payload: LogSetInput): Promise<{ ok: true }>
   try {
     await enqueue(entry);
   } catch {
-    // IndexedDB no disponible: último recurso, intentar directo
     await logSet(payload);
   }
   return { ok: true };
@@ -129,7 +166,6 @@ export function startQueueSyncOnline(): () => void {
   if (typeof window === "undefined") return () => undefined;
   const handler = () => void drainQueue();
   window.addEventListener("online", handler);
-  // intento inicial
   void drainQueue();
   return () => window.removeEventListener("online", handler);
 }

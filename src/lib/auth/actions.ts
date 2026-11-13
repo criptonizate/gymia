@@ -70,5 +70,6 @@ export async function signInWithGoogle() {
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  // La cola offline la limpia el cliente antes de llamar a signOut (ver nav).
   redirect("/login");
 }

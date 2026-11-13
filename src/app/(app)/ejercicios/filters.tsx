@@ -47,7 +47,7 @@ export function ExerciseFilters({ muscleGroups, equipment }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Buscar ejercicio"
-          className="min-h-12 w-full rounded-xl border border-border bg-card pl-10 pr-10 text-sm outline-none focus:border-primary"
+          className="min-h-12 w-full rounded-xl border border-border bg-card pl-10 pr-10 text-base outline-none focus:border-primary"
         />
         {text && (
           <button

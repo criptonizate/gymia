@@ -114,7 +114,7 @@ export function YoutubeBlock({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="https://www.youtube.com/watch?v=..."
-            className="min-h-12 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+            className="min-h-12 rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-primary"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <button

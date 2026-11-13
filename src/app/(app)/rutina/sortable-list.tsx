@@ -210,7 +210,7 @@ function SortableRow({
         aria-label="Arrastrar"
         {...sortable.attributes}
         {...sortable.listeners}
-        className="flex h-10 w-6 items-center justify-center text-muted-foreground touch-none"
+        className="flex h-11 w-11 items-center justify-center text-muted-foreground touch-none"
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -223,17 +223,19 @@ function SortableRow({
         minimal
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium">
-            {item.exercise.nombre}
-          </span>
+        <span className="truncate text-sm font-medium">
+          {item.exercise.nombre}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
           {supersetBadge && (
-            <span className="rounded-full bg-[var(--primary-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-              superset
+            <span
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary-soft)] text-primary"
+              aria-label="superset"
+              title="Superset"
+            >
+              ∞
             </span>
           )}
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
           {item.exercise.tipo_registro === "tiempo"
             ? `${item.series}×${item.duracion_seg}s`
             : `${item.series}×${item.reps_min}-${item.reps_max}`}
@@ -242,7 +244,7 @@ function SortableRow({
       <button
         aria-label="Más acciones"
         onClick={onMenu}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-accent"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>

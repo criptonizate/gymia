@@ -1,6 +1,37 @@
 // Schemas Zod reusables para server actions.
 import { z } from "zod";
 
+// Mensajes amigables al user (Zod v4). Devuelve string para forzar el mensaje;
+// `undefined` deja el default. No tocamos códigos raros para no ocultar bugs.
+z.config({
+  customError: (iss) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const i = iss as any;
+    if (i.code === "invalid_type") {
+      if (i.input === undefined || i.input === null) return "Falta este dato.";
+      return "Tipo de dato incorrecto.";
+    }
+    if (i.code === "too_small") {
+      if (i.origin === "string")
+        return i.minimum === 1
+          ? "No puede estar vacío."
+          : `Mínimo ${i.minimum} caracteres.`;
+      if (i.origin === "number") return `Mínimo ${i.minimum}.`;
+      if (i.origin === "array") return `Necesitás al menos ${i.minimum}.`;
+    }
+    if (i.code === "too_big") {
+      if (i.origin === "string") return `Máximo ${i.maximum} caracteres.`;
+      if (i.origin === "number") return `Máximo ${i.maximum}.`;
+    }
+    if (i.code === "invalid_format") {
+      if (i.format === "email") return "Email inválido.";
+      if (i.format === "uuid") return "ID inválido.";
+    }
+    if (i.code === "invalid_value") return "Valor inválido.";
+    return undefined;
+  },
+});
+
 export const Nivel = z.enum(["principiante", "intermedio", "avanzado"]);
 export const Objetivo = z.enum(["hipertrofia", "fuerza", "general"]);
 export const TipoRegistro = z.enum(["peso_reps", "reps", "tiempo"]);

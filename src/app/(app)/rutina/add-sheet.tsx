@@ -21,9 +21,9 @@ export function AddExerciseSheet({ open, onClose, routineDayId }: Props) {
   const [pending, start] = useTransition();
 
   useEffect(() => {
-    if (!open || all) return;
+    if (!open) return;
     listCatalog().then(setAll);
-  }, [open, all]);
+  }, [open]);
 
   const filtered = useMemo(() => {
     if (!all) return [];
@@ -50,7 +50,7 @@ export function AddExerciseSheet({ open, onClose, routineDayId }: Props) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar en el catálogo"
-            className="min-h-12 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none focus:border-primary"
+            className="min-h-12 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-base outline-none focus:border-primary"
           />
         </label>
         {error && <p className="text-sm text-destructive">{error}</p>}

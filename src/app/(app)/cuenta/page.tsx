@@ -1,6 +1,5 @@
-import { LogOut } from "lucide-react";
 import { getProfile } from "@/lib/supabase/profile";
-import { signOut } from "@/lib/auth/actions";
+import { SignOutButton } from "./sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnitToggle } from "@/components/unit-toggle";
 import { KpiGrid } from "@/modules/progress/components/KpiGrid";
@@ -102,15 +101,7 @@ export default async function CuentaPage() {
         <PresetCountdownToggle />
       </section>
 
-      <form action={signOut} className="mt-2">
-        <button
-          type="submit"
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-medium text-destructive hover:bg-accent"
-        >
-          <LogOut className="h-4 w-4" />
-          Cerrar sesión
-        </button>
-      </form>
+      <SignOutButton />
     </main>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -12,20 +12,35 @@ type Props = {
 };
 
 export function BottomSheet({ open, onClose, title, children }: Props) {
+  // Altura visible (VisualViewport se achica al abrir el teclado en iOS).
+  const [vhPx, setVhPx] = useState<number | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    const sync = () => {
+      if (vv) setVhPx(vv.height);
+    };
     window.addEventListener("keydown", onKey);
+    vv?.addEventListener("resize", sync);
+    vv?.addEventListener("scroll", sync);
+    sync();
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
+      vv?.removeEventListener("resize", sync);
+      vv?.removeEventListener("scroll", sync);
       document.body.style.overflow = "";
+      setVhPx(null);
     };
   }, [open, onClose]);
 
   if (typeof document === "undefined" || !open) return null;
+
+  const maxH = vhPx ? Math.min(vhPx - 32, vhPx * 0.9) : null;
 
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end justify-center">
@@ -38,6 +53,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        style={maxH ? { maxHeight: `${maxH}px` } : undefined}
         className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-popover text-popover-foreground shadow-xl animate-in slide-in-from-bottom duration-200"
       >
         <div className="relative flex items-center justify-center p-4">

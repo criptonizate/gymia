@@ -18,6 +18,7 @@ type Props = {
   target: CurrentTarget;
   results: SetResult[];
   onPick: (s: Suggestion) => void;
+  esSustituto?: boolean;
 };
 
 export function ProgressionSheet({
@@ -26,6 +27,7 @@ export function ProgressionSheet({
   target,
   results,
   onPick,
+  esSustituto,
 }: Props) {
   const a = analyze(target, results);
   const isTime = target.tipo_registro === "tiempo";
@@ -78,6 +80,12 @@ export function ProgressionSheet({
   return (
     <BottomSheet open={open} onClose={onClose} title="¿Y la próxima?">
       <div className="flex flex-col gap-2 pb-2">
+        {esSustituto && (
+          <p className="rounded-lg bg-[var(--primary-soft)] p-2 text-xs text-primary">
+            Como entrenaste con un sustituto, no vamos a actualizar el
+            objetivo del ejercicio original de tu rutina.
+          </p>
+        )}
         {options.map((o, i) => {
           const Icon = o.icon;
           return (

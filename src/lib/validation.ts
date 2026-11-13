@@ -63,3 +63,39 @@ export const BodyWeightInput = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   kg: z.number().min(20).max(400),
 });
+
+export const PlannedExerciseSchema = z.object({
+  orden: z.number().int().min(1).max(20),
+  exercise_id: Uuid.optional(),
+  exercise_slug: z.string().min(1).max(120),
+  nombre: z.string().min(1).max(200),
+  patron: z.string().min(1).max(40),
+  tipo: z.enum(["compuesto", "aislamiento"]),
+  tipo_registro: TipoRegistro,
+  muscle_group_slug: z.string().min(1).max(40),
+  equipment_slug: z.string().min(1).max(40),
+  series: z.number().int().min(1).max(10),
+  reps_min: z.number().int().min(1).max(200).optional().nullable(),
+  reps_max: z.number().int().min(1).max(200).optional().nullable(),
+  duracion_seg: z.number().int().min(1).max(3600).optional().nullable(),
+  descanso_seg: z.number().int().min(10).max(600),
+  superset_group: z.number().int().nullable().optional(),
+});
+
+export const PlannedDaySchema = z.object({
+  semana: z.number().int().min(1).max(4),
+  orden: z.number().int().min(1).max(5),
+  nombre: z.string().min(1).max(120),
+  split_label: z.string().min(1).max(80).optional(),
+  ejercicios: z.array(PlannedExerciseSchema).min(1).max(12),
+});
+
+export const RoutinePlanSchema = z.object({
+  nombre: z.string().min(1).max(160),
+  split: z.string().min(1).max(80),
+  dias_por_semana: z.number().int().min(2).max(5),
+  semanas: z.number().int().min(1).max(4),
+  nivel: Nivel,
+  objetivo: Objetivo,
+  dias: z.array(PlannedDaySchema).min(1).max(28),
+});

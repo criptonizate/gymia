@@ -80,6 +80,7 @@ export async function savePlan(plan: RoutinePlan): Promise<Result<{ routineId: s
           reps_max: e.reps_max ?? "",
           duracion_seg: e.duracion_seg ?? "",
           descanso_seg: e.descanso_seg,
+          superset_group: e.superset_group ?? "",
         })),
       })),
     },
@@ -268,6 +269,45 @@ export async function setSupersetGroup(
   return { ok: true, data: undefined };
 }
 
+/** Pide al servidor un nuevo superset_group único para la rutina activa. */
+export async function nextSupersetGroup(): Promise<Result<number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("next_superset_group");
+  if (error || data == null) {
+    return { ok: false, error: error?.message ?? "No pude generar un id." };
+  }
+  return { ok: true, data: Number(data) };
+}
+
+/** Limpia superset_group de ejercicios que quedaron solos en su grupo. */
+export async function cleanupOrphanSupersets(
+  routineDayId: string,
+): Promise<Result> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("routine_exercises")
+    .select("id, superset_group")
+    .eq("routine_day_id", routineDayId)
+    .not("superset_group", "is", null);
+  if (!data) return { ok: true, data: undefined };
+  const counts = new Map<number, string[]>();
+  for (const r of data as { id: string; superset_group: number }[]) {
+    const arr = counts.get(r.superset_group) ?? [];
+    arr.push(r.id);
+    counts.set(r.superset_group, arr);
+  }
+  const orphans: string[] = [];
+  for (const [, ids] of counts) if (ids.length < 2) orphans.push(...ids);
+  if (orphans.length > 0) {
+    await supabase
+      .from("routine_exercises")
+      .update({ superset_group: null })
+      .in("id", orphans);
+  }
+  revalidatePath("/rutina");
+  return { ok: true, data: undefined };
+}
+
 // -------------------------------------------------------------------------
 // Eliminar
 // -------------------------------------------------------------------------
@@ -384,7 +424,7 @@ export async function exportActiveRoutine(): Promise<Result<RoutinePlan>> {
   const { data: exs } = await supabase
     .from("routine_exercises")
     .select(
-      `routine_day_id, exercise_id, orden, series, reps_min, reps_max, duracion_seg, descanso_seg,
+      `routine_day_id, exercise_id, orden, series, reps_min, reps_max, duracion_seg, descanso_seg, superset_group,
        exercise:exercises!inner(slug, nombre, patron, tipo, tipo_registro,
          muscle_group:muscle_groups!inner(slug),
          equipment:equipment!inner(slug))`,
@@ -401,6 +441,7 @@ export async function exportActiveRoutine(): Promise<Result<RoutinePlan>> {
     reps_max: number | null;
     duracion_seg: number | null;
     descanso_seg: number;
+    superset_group: number | null;
     exercise: {
       slug: string;
       nombre: string;
@@ -447,6 +488,7 @@ export async function exportActiveRoutine(): Promise<Result<RoutinePlan>> {
         reps_max: e.reps_max ?? undefined,
         duracion_seg: e.duracion_seg ?? undefined,
         descanso_seg: e.descanso_seg,
+        superset_group: e.superset_group,
       })),
     })),
   };
@@ -460,13 +502,16 @@ export async function exportActiveRoutine(): Promise<Result<RoutinePlan>> {
 export async function importRoutineFromPlan(
   rawPlan: unknown,
 ): Promise<Result<{ routineId: string }>> {
-  if (!rawPlan || typeof rawPlan !== "object") {
-    return { ok: false, error: "JSON inválido." };
+  const parsed = (
+    await import("@/lib/validation")
+  ).RoutinePlanSchema.safeParse(rawPlan);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "JSON inválido: " + (parsed.error.issues[0]?.message ?? ""),
+    };
   }
-  const plan = rawPlan as RoutinePlan;
-  if (!Array.isArray(plan.dias)) {
-    return { ok: false, error: "JSON sin días." };
-  }
+  const plan = parsed.data as unknown as RoutinePlan;
 
   const supabase = await createClient();
   // Resolver IDs por slug

@@ -32,6 +32,8 @@ import { BottomSheet } from "@/components/bottom-sheet";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import type { RoutineExerciseRow } from "@/modules/routines/queries";
 import {
+  cleanupOrphanSupersets,
+  nextSupersetGroup,
   removeExercise,
   reorderDay,
   setSupersetGroup,
@@ -51,7 +53,7 @@ export function SortableExerciseList({
   const router = useRouter();
   const [items, setItems] = useState(ejercicios);
   const [menuFor, setMenuFor] = useState<string | null>(null);
-  const [, start] = useTransition();
+  const [pending, start] = useTransition();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -62,6 +64,7 @@ export function SortableExerciseList({
   );
 
   function onDragEnd(e: DragEndEvent) {
+    if (pending) return; // bloquear si hay persist pendiente
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const oldIdx = items.findIndex((x) => x.id === active.id);
@@ -76,6 +79,11 @@ export function SortableExerciseList({
         routineDayId,
         next.map((x) => x.id),
       );
+      // Si un drag separó un par de superset, limpiar huérfanos
+      if (items.some((x) => x.superset_group != null)) {
+        await cleanupOrphanSupersets(routineDayId);
+      }
+      router.refresh();
     });
   }
 
@@ -84,6 +92,7 @@ export function SortableExerciseList({
     setItems((p) => p.filter((x) => x.id !== id));
     start(async () => {
       await removeExercise(id);
+      await cleanupOrphanSupersets(routineDayId);
       router.refresh();
     });
   }
@@ -94,15 +103,18 @@ export function SortableExerciseList({
     setMenuFor(null);
     if (e.superset_group != null) {
       start(async () => {
+        // Al desagrupar uno, limpiar al compañero huérfano también
         await setSupersetGroup([e.id], null);
+        await cleanupOrphanSupersets(routineDayId);
         router.refresh();
       });
       return;
     }
     if (!next) return;
-    const groupId = Date.now() % 32000; // smallint-safe
     start(async () => {
-      await setSupersetGroup([e.id, next.id], groupId);
+      const r = await nextSupersetGroup();
+      if (!r.ok) return;
+      await setSupersetGroup([e.id, next.id], r.data);
       router.refresh();
     });
   }

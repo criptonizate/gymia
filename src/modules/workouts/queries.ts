@@ -212,6 +212,9 @@ export async function getSessionContext(sessionId: string): Promise<null | {
   day: RoutineDayRow & { ejercicios: RoutineExerciseRow[] };
   logs: SetLog[];
   lastLogsByExercise: Record<string, SetLog[]>;
+  /** Para cada routine_exercise_id que fue entrenado con un sustituto en
+   * esta sesión, el ejercicio sustituto completo (para retomar overrides). */
+  substitutes: Record<string, import("@/modules/exercises/types").ExerciseWithRelations>;
 }> {
   const supabase = await createClient();
   const {
@@ -272,11 +275,52 @@ export async function getSessionContext(sessionId: string): Promise<null | {
     lastLogsByExercise[exId] = sessionsOrdered[0]?.[1] ?? [];
   }
 
+  // Sustitutos activos en esta sesión: por cada routine_exercise con logs
+  // marcados es_sustituto=true, el exercise_id "efectivo" y sus datos.
+  const subsMap: Record<
+    string,
+    import("@/modules/exercises/types").ExerciseWithRelations
+  > = {};
+  const subNeeded = new Map<string, string>(); // routine_exercise_id -> sub exercise_id
+  for (const l of (logs ?? []) as SetLog[]) {
+    if (!l.es_sustituto) continue;
+    const re = typedExs.find((x) => x.id === l.routine_exercise_id);
+    if (!re) continue;
+    if (l.exercise_id !== re.exercise_id) {
+      subNeeded.set(l.routine_exercise_id, l.exercise_id);
+    }
+  }
+  if (subNeeded.size > 0) {
+    const ids = Array.from(new Set(subNeeded.values()));
+    const { data: subExs } = await supabase
+      .from("exercises")
+      .select(
+        `${EX_COLS},
+         muscle_group:muscle_groups!inner(id,nombre,slug),
+         equipment:equipment!inner(id,nombre,slug)`,
+      )
+      .in("id", ids);
+    const byId = new Map<
+      string,
+      import("@/modules/exercises/types").ExerciseWithRelations
+    >();
+    for (const e of (subExs ?? []) as unknown as import(
+      "@/modules/exercises/types"
+    ).ExerciseWithRelations[]) {
+      byId.set(e.id, e);
+    }
+    for (const [reId, exId] of subNeeded) {
+      const ex = byId.get(exId);
+      if (ex) subsMap[reId] = ex;
+    }
+  }
+
   return {
     session: session as WorkoutSession,
     day: { ...(day as RoutineDayRow), ejercicios: typedExs },
     logs: (logs ?? []) as SetLog[],
     lastLogsByExercise,
+    substitutes: subsMap,
   };
 }
 

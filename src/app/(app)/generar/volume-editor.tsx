@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Minus, Plus, Sliders } from "lucide-react";
 import {
   MUSCLE_LABELS,
@@ -26,18 +26,47 @@ export function VolumeEditor({ plan, config, onApply, pending }: Props) {
   const [open, setOpen] = useState(false);
   const recomendado = useMemo(() => recommendVolume(config), [config]);
   const actual = useMemo(() => computeVolume(plan), [plan]);
+  // Mínimo = compuestos por semana (no se tocan); clampea el stepper.
+  const minimos = useMemo<VolumeMap>(() => {
+    const semanas = Array.from(new Set(plan.dias.map((d) => d.semana))).length || 1;
+    const perMuscleComp = {} as VolumeMap;
+    for (const k of MUSCLE_SLUGS) perMuscleComp[k] = 0;
+    for (const d of plan.dias) {
+      for (const e of d.ejercicios) {
+        if (e.tipo === "compuesto" && e.muscle_group_slug in perMuscleComp) {
+          perMuscleComp[e.muscle_group_slug as MuscleSlug] += 1;
+        }
+      }
+    }
+    for (const k of MUSCLE_SLUGS) {
+      if (k === "core") perMuscleComp[k] = 0;
+      else perMuscleComp[k] = Math.round(perMuscleComp[k] / semanas);
+    }
+    return perMuscleComp;
+  }, [plan]);
   const [target, setTarget] = useState<VolumeMap>(() => ({ ...actual }));
+
+  // Si cambia el plan (se regeneró), resincronizar steppers.
+  useEffect(() => {
+    setTarget({ ...actual });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan]);
 
   function bump(k: MuscleSlug, delta: number) {
     setTarget((p) => {
       const next = { ...p };
       const max = k === "core" ? 3 : 8;
-      next[k] = Math.max(0, Math.min(max, next[k] + delta));
+      const min = k === "core" ? 0 : minimos[k] ?? 0;
+      next[k] = Math.max(min, Math.min(max, next[k] + delta));
       return next;
     });
   }
   function reset() {
-    setTarget({ ...recomendado });
+    const safe = {} as VolumeMap;
+    for (const k of MUSCLE_SLUGS) {
+      safe[k] = k === "core" ? recomendado[k] : Math.max(minimos[k] ?? 0, recomendado[k]);
+    }
+    setTarget(safe);
   }
 
   const dirty = MUSCLE_SLUGS.some((k) => target[k] !== actual[k]);
@@ -77,6 +106,9 @@ export function VolumeEditor({ plan, config, onApply, pending }: Props) {
                   <span className="text-sm font-medium">{MUSCLE_LABELS[k]}</span>
                   <span className="text-[11px] text-muted-foreground">
                     sugerido {recomendado[k]} · actual {actual[k]}
+                    {k !== "core" && minimos[k] > 0
+                      ? ` · mín ${minimos[k]} (compuestos)`
+                      : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

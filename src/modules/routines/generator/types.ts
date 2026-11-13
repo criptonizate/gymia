@@ -32,6 +32,7 @@ export type PlannedExercise = {
   reps_max?: number;
   duracion_seg?: number;
   descanso_seg: number;
+  superset_group?: number | null;
 };
 
 export type PlannedDay = {

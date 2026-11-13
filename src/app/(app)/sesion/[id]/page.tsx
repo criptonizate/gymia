@@ -25,6 +25,7 @@ export default async function SesionPage({
       ejercicios={ctx.day.ejercicios}
       logs={ctx.logs}
       lastLogsByExercise={ctx.lastLogsByExercise}
+      substitutes={ctx.substitutes}
     />
   );
 }

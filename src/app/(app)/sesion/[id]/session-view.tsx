@@ -45,6 +45,7 @@ type Props = {
   ejercicios: RoutineExerciseRow[];
   logs: SetLog[];
   lastLogsByExercise: Record<string, SetLog[]>;
+  substitutes: Record<string, ExerciseWithRelations>;
 };
 
 type Override = { exerciseId: string; exerciseSlug: string; nombre: string; media_url: string | null; media_frames: string[]; muscle_group_slug: string; instrucciones: string[]; errores_comunes: string[]; youtube_query: string | null; equipment_slug: string; tipo_registro: "peso_reps" | "reps" | "tiempo" };
@@ -56,11 +57,31 @@ export function SessionView({
   ejercicios,
   logs: initialLogs,
   lastLogsByExercise,
+  substitutes,
 }: Props) {
   const router = useRouter();
   const [i, setI] = useState(0);
   const [logs, setLogs] = useState<SetLog[]>(initialLogs);
-  const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  // Hidratar overrides desde los sustitutos persistidos (recarga sesión abierta)
+  const [overrides, setOverrides] = useState<Record<string, Override>>(() => {
+    const init: Record<string, Override> = {};
+    for (const [reId, ex] of Object.entries(substitutes)) {
+      init[reId] = {
+        exerciseId: ex.id,
+        exerciseSlug: ex.slug,
+        nombre: ex.nombre,
+        media_url: ex.media_url,
+        media_frames: ex.media_frames,
+        muscle_group_slug: ex.muscle_group.slug,
+        instrucciones: ex.instrucciones,
+        errores_comunes: ex.errores_comunes,
+        youtube_query: ex.youtube_query,
+        equipment_slug: ex.equipment.slug,
+        tipo_registro: ex.tipo_registro,
+      };
+    }
+    return init;
+  });
   const [rest, setRest] = useState<{ seconds: number } | null>(null);
   const [presetSecs, setPresetSecs] = useState<number | null>(null);
 
@@ -96,18 +117,34 @@ export function SessionView({
   );
   const lastLogs = lastLogsByExercise[activeExerciseId];
 
-  // Swipe
-  const touchStart = useRef<number | null>(null);
+  // Swipe horizontal (ignora si parece scroll vertical, si viene de
+  // dentro de un overlay o de un control interactivo).
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   function onTouchStart(e: React.TouchEvent) {
-    touchStart.current = e.touches[0].clientX;
+    const t = e.touches[0];
+    // Si el toque empezó dentro de un dialog/button/input/textarea/select,
+    // no capturamos el swipe (evita robar scroll de bottom sheets y taps).
+    const target = e.target as HTMLElement | null;
+    if (
+      target?.closest(
+        '[role="dialog"], button, input, textarea, select, label, a',
+      )
+    ) {
+      touchStart.current = null;
+      return;
+    }
+    touchStart.current = { x: t.clientX, y: t.clientY };
   }
   function onTouchEnd(e: React.TouchEvent) {
     if (touchStart.current == null) return;
-    const delta = e.changedTouches[0].clientX - touchStart.current;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
     touchStart.current = null;
-    if (Math.abs(delta) < 60) return;
-    if (delta < 0 && i < ejercicios.length - 1) setI(i + 1);
-    if (delta > 0 && i > 0) setI(i - 1);
+    if (Math.abs(dx) < 60) return;
+    // Horizontal real: X tiene que dominar sobre Y
+    if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && i < ejercicios.length - 1) setI(i + 1);
+    if (dx > 0 && i > 0) setI(i - 1);
   }
 
   // Optimistic + server save
@@ -203,8 +240,15 @@ export function SessionView({
 
   async function onPickSuggestion(s: Suggestion) {
     if (!progressionOpen) return;
-    await applyProgression(progressionOpen.routineExerciseId, progressionOpen.target, s);
-    // Avanzar al siguiente
+    // Si entrenaste con sustituto, no sobreescribimos el objetivo del
+    // ejercicio original: lo dejaríamos inconsistente con tu progreso real.
+    if (!isSub) {
+      await applyProgression(
+        progressionOpen.routineExerciseId,
+        progressionOpen.target,
+        s,
+      );
+    }
     if (i < ejercicios.length - 1) setI(i + 1);
     else setSummaryOpen(true);
   }
@@ -436,6 +480,7 @@ export function SessionView({
           target={progressionOpen.target}
           results={progressionOpen.results}
           onPick={onPickSuggestion}
+          esSustituto={isSub}
         />
       )}
 

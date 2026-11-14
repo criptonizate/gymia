@@ -6,12 +6,14 @@ import type {
   ExerciseWithRelations,
   Nivel,
 } from "@/modules/exercises/types";
-import type {
-  GeneratorConfig,
-  Objetivo,
-  PlannedDay,
-  PlannedExercise,
-  RoutinePlan,
+import {
+  CASA_EQUIPMENT,
+  type Entorno,
+  type GeneratorConfig,
+  type Objetivo,
+  type PlannedDay,
+  type PlannedExercise,
+  type RoutinePlan,
 } from "./types";
 import { prescripcion } from "./prescription";
 import { makeRng, shuffle } from "./rng";
@@ -138,8 +140,13 @@ export function adjustPlanVolume(
   target: VolumeMap,
   catalog: ExerciseWithRelations[],
   seed = 42,
+  entorno: Entorno = "gimnasio",
 ): RoutinePlan {
   const rng = makeRng(seed);
+  const usable =
+    entorno === "casa"
+      ? catalog.filter((e) => CASA_EQUIPMENT.includes(e.equipment.slug))
+      : catalog;
 
   // Copia profunda liviana
   const next: RoutinePlan = {
@@ -151,7 +158,7 @@ export function adjustPlanVolume(
   const semanas = Array.from(new Set(next.dias.map((d) => d.semana))).sort();
   for (const sem of semanas) {
     const dias = next.dias.filter((d) => d.semana === sem);
-    adjustWeek(dias, target, catalog, plan.nivel, plan.objetivo, rng);
+    adjustWeek(dias, target, usable, plan.nivel, plan.objetivo, rng);
   }
   // Reordenar y renumerar
   for (const d of next.dias) orderDay(d);

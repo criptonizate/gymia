@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Sparkles, Check, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Check, Zap, Home, Dumbbell } from "lucide-react";
 import {
   adjustVolume,
   previewPlan,
@@ -12,6 +12,7 @@ import type { VolumeMap } from "@/modules/routines/generator/volume";
 import { VolumeEditor } from "./volume-editor";
 import type {
   DiasSemana,
+  Entorno,
   GeneratorConfig,
   Objetivo,
   RoutinePlan,
@@ -76,15 +77,19 @@ const PRESETS: Preset[] = [
 export function GenerarWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [cfg, setCfg] = useState<Config>({ objetivo: "hipertrofia" });
+  const [cfg, setCfg] = useState<Config>({
+    objetivo: "hipertrofia",
+    entorno: "gimnasio",
+  });
   const [plan, setPlan] = useState<RoutinePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const isFull = cfg.diasPorSemana && cfg.semanas && cfg.nivel && cfg.objetivo;
+  const isFull =
+    cfg.entorno && cfg.diasPorSemana && cfg.semanas && cfg.nivel && cfg.objetivo;
 
   function next() {
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   }
   function prev() {
     if (step === 0) router.back();
@@ -99,7 +104,7 @@ export function GenerarWizard() {
       if (!res.ok) setError(res.error);
       else {
         setPlan(res.data);
-        setStep(4);
+        setStep(5);
       }
     });
   }
@@ -130,38 +135,81 @@ export function GenerarWizard() {
 
       <div className="flex-1 px-4 pb-4">
         {step === 0 && (
-          <Step title="¿Cuántos días por semana vas a entrenar?">
-            <section className="flex flex-col gap-2">
-              <h3 className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <Zap className="h-3.5 w-3.5 text-primary" />
-                O elegí una plantilla
-              </h3>
-              <div className="flex flex-col gap-2">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.key}
-                    onClick={() => {
-                      setCfg(p.cfg);
-                      start(async () => {
-                        const res = await previewPlan(p.cfg);
-                        if (!res.ok) setError(res.error);
-                        else {
-                          setPlan(res.data);
-                          setStep(4);
-                        }
-                      });
-                    }}
-                    className="flex flex-col items-start rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50"
-                  >
-                    <span className="text-sm font-semibold">{p.label}</span>
-                    <span className="text-xs text-muted-foreground">{p.subtitle}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-            <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="h-px flex-1 bg-border" />o armá uno<div className="h-px flex-1 bg-border" />
+          <Step title="¿Dónde vas a entrenar?">
+            <div className="flex flex-col gap-3">
+              <BigPick
+                active={cfg.entorno === "gimnasio"}
+                onClick={() => {
+                  setCfg({ ...cfg, entorno: "gimnasio" });
+                  next();
+                }}
+                vertical
+              >
+                <span className="flex items-center gap-2">
+                  <Dumbbell className="h-5 w-5 text-primary" />
+                  <span className="text-lg font-semibold">En el gimnasio</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Barras, máquinas, poleas, mancuernas, etc.
+                </span>
+              </BigPick>
+              <BigPick
+                active={cfg.entorno === "casa"}
+                onClick={() => {
+                  setCfg({ ...cfg, entorno: "casa" });
+                  next();
+                }}
+                vertical
+              >
+                <span className="flex items-center gap-2">
+                  <Home className="h-5 w-5 text-primary" />
+                  <span className="text-lg font-semibold">En casa</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Peso corporal y mancuernas (o botellas / mochila).
+                </span>
+              </BigPick>
             </div>
+          </Step>
+        )}
+
+        {step === 1 && (
+          <Step title="¿Cuántos días por semana vas a entrenar?">
+            {cfg.entorno === "gimnasio" && (
+              <section className="flex flex-col gap-2">
+                <h3 className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                  <Zap className="h-3.5 w-3.5 text-primary" />
+                  O elegí una plantilla
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {PRESETS.map((p) => (
+                    <button
+                      key={p.key}
+                      onClick={() => {
+                        setCfg({ ...p.cfg, entorno: "gimnasio" });
+                        start(async () => {
+                          const res = await previewPlan({ ...p.cfg, entorno: "gimnasio" });
+                          if (!res.ok) setError(res.error);
+                          else {
+                            setPlan(res.data);
+                            setStep(5);
+                          }
+                        });
+                      }}
+                      className="flex flex-col items-start rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50"
+                    >
+                      <span className="text-sm font-semibold">{p.label}</span>
+                      <span className="text-xs text-muted-foreground">{p.subtitle}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+            {cfg.entorno === "gimnasio" && (
+              <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />o armá uno<div className="h-px flex-1 bg-border" />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               {DIAS.map((d) => (
                 <BigPick
@@ -173,16 +221,14 @@ export function GenerarWizard() {
                   }}
                 >
                   <span className="text-3xl font-bold tabular-nums">{d}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {d === 2 ? "días" : "días"}
-                  </span>
+                  <span className="text-xs text-muted-foreground">días</span>
                 </BigPick>
               ))}
             </div>
           </Step>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <Step title="¿Cuántas semanas dura el plan?">
             <div className="grid grid-cols-2 gap-3">
               {SEMANAS.map((s) => (
@@ -204,7 +250,7 @@ export function GenerarWizard() {
           </Step>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <Step title="¿Cuál es tu nivel?">
             <div className="flex flex-col gap-3">
               {NIVELES.map((n) => (
@@ -224,7 +270,7 @@ export function GenerarWizard() {
           </Step>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <Step title="¿Cuál es tu objetivo?">
             <div className="flex flex-col gap-3">
               {OBJETIVOS.map((o) => (
@@ -244,7 +290,7 @@ export function GenerarWizard() {
           </Step>
         )}
 
-        {step === 4 && plan && (
+        {step === 5 && plan && (
           <div className="flex flex-col gap-4">
             <header className="flex flex-col gap-1">
               <h2 className="text-lg font-semibold">Previsualización</h2>
@@ -257,7 +303,12 @@ export function GenerarWizard() {
               pending={pending}
               onApply={(target: VolumeMap) => {
                 start(async () => {
-                  const r = await adjustVolume(plan, target);
+                  const r = await adjustVolume(
+                    plan,
+                    target,
+                    undefined,
+                    cfg.entorno ?? "gimnasio",
+                  );
                   if (r.ok) setPlan(r.data);
                 });
               }}
@@ -322,7 +373,7 @@ export function GenerarWizard() {
         )}
       </div>
 
-      {step < 4 && (
+      {step < 5 && (
         <div className="sticky bottom-20 flex items-center justify-between gap-2 border-t border-border bg-background px-4 py-3">
           <button
             onClick={prev}
@@ -334,7 +385,7 @@ export function GenerarWizard() {
           {pending && (
             <span className="text-xs text-muted-foreground">Generando…</span>
           )}
-          {step < 3 && (
+          {step < 4 && (
             <button
               onClick={next}
               disabled={!currentStepValue(step, cfg)}
@@ -351,27 +402,28 @@ export function GenerarWizard() {
 }
 
 function currentStepValue(step: number, cfg: Config): unknown {
-  if (step === 0) return cfg.diasPorSemana;
-  if (step === 1) return cfg.semanas;
-  if (step === 2) return cfg.nivel;
-  if (step === 3) return cfg.objetivo;
+  if (step === 0) return cfg.entorno;
+  if (step === 1) return cfg.diasPorSemana;
+  if (step === 2) return cfg.semanas;
+  if (step === 3) return cfg.nivel;
+  if (step === 4) return cfg.objetivo;
   return true;
 }
 
 function StepHeader({ step }: { step: number }) {
-  const titles = ["Días", "Semanas", "Nivel", "Objetivo", "Preview"];
+  const titles = ["Entorno", "Días", "Semanas", "Nivel", "Objetivo", "Preview"];
   return (
     <header className="flex flex-col gap-3 px-4 pb-4 pt-4">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          Paso {Math.min(step + 1, 5)} de 5
+          Paso {Math.min(step + 1, 6)} de 6
         </span>
         <span>{titles[step]}</span>
       </div>
       <div className="h-1 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${((step + 1) / 5) * 100}%` }}
+          style={{ width: `${((step + 1) / 6) * 100}%` }}
         />
       </div>
     </header>

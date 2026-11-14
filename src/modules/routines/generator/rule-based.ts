@@ -14,6 +14,7 @@ import type {
 import { makeRng, shuffle } from "./rng";
 import { CORE_PATRON_ROTATION, pickSplit, type Slot } from "./templates";
 import { prescripcion } from "./prescription";
+import { CASA_EQUIPMENT } from "./types";
 
 const NIVELES_ORDER: Nivel[] = ["principiante", "intermedio", "avanzado"];
 
@@ -98,6 +99,13 @@ function scoreCandidate(
 export const RuleBasedGenerator: RoutineGenerator = {
   generate(config, catalog, seed = 42): RoutinePlan {
     const rng = makeRng(seed);
+    // En casa: filtramos el catálogo a equipos que se tienen (o se pueden
+    // improvisar). En gym: usamos todo.
+    const entorno = config.entorno ?? "gimnasio";
+    const usableCatalog =
+      entorno === "casa"
+        ? catalog.filter((e) => CASA_EQUIPMENT.includes(e.equipment.slug))
+        : catalog;
     const { templates, split } = pickSplit(
       config.diasPorSemana,
       config.nivel,
@@ -139,7 +147,9 @@ export const RuleBasedGenerator: RoutineGenerator = {
 
           // Algún slot no-core queda sin cubrir y faltan opciones → se
           // intentará garantizar la polea con forceCable=true más abajo.
+          // En casa no hay polea, así que no forzamos nada.
           const isLastNonCore =
+            entorno !== "casa" &&
             slot.kind !== "core" &&
             !hasCableNonCore &&
             !template.slots
@@ -148,7 +158,7 @@ export const RuleBasedGenerator: RoutineGenerator = {
           const forceCable = isLastNonCore;
 
           // Candidatos base que matchean el slot
-          let candidates = catalog.filter((e) => matchSlot(e, slot, config.nivel));
+          let candidates = usableCatalog.filter((e) => matchSlot(e, slot, config.nivel));
 
           if (slot.kind === "core") {
             // Preferir el patrón rotacional del día; si no, cualquier core
@@ -211,7 +221,7 @@ export const RuleBasedGenerator: RoutineGenerator = {
           const picked_ex =
             chosen ??
             (() => {
-              const relaxed = catalog.filter((e) =>
+              const relaxed = usableCatalog.filter((e) =>
                 matchSlot(e, slot, config.nivel),
               );
               return shuffle(relaxed, rng)[0];

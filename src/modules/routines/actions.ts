@@ -38,6 +38,7 @@ export async function adjustVolume(
   plan: RoutinePlan,
   target: VolumeMap,
   seed?: number,
+  entorno: "casa" | "gimnasio" = "gimnasio",
 ): Promise<Result<RoutinePlan>> {
   const catalog = await listExercises();
   const adjusted = adjustPlanVolume(
@@ -45,6 +46,7 @@ export async function adjustVolume(
     target,
     catalog,
     seed ?? Math.floor(Math.random() * 2 ** 31),
+    entorno,
   );
   return { ok: true, data: adjusted };
 }

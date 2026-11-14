@@ -9,13 +9,23 @@ import type {
 export type Objetivo = "hipertrofia" | "fuerza" | "general";
 export type DiasSemana = 2 | 3 | 4 | 5;
 export type Semanas = 1 | 2 | 3 | 4;
+export type Entorno = "casa" | "gimnasio";
 
 export type GeneratorConfig = {
   diasPorSemana: DiasSemana;
   semanas: Semanas;
   nivel: Nivel;
   objetivo: Objetivo;
+  entorno?: Entorno;
 };
+
+/** Equipos permitidos en el entorno "casa". */
+export const CASA_EQUIPMENT: readonly string[] = [
+  "peso-corporal",
+  "mancuernas",
+  "banco",
+  "barra-z",
+];
 
 export type PlannedExercise = {
   orden: number;

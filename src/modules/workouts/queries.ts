@@ -7,7 +7,7 @@ const EX_COLS =
 
 const RE_COLS = `
   id, routine_day_id, exercise_id, orden, series, reps_min, reps_max,
-  duracion_seg, peso_objetivo_kg, descanso_seg, notas, superset_group,
+  duracion_seg, peso_objetivo_kg, descanso_seg, notas, superset_group, rir_objetivo,
   exercise:exercises!inner(
     ${EX_COLS},
     muscle_group:muscle_groups!inner(id,nombre,slug),
@@ -16,7 +16,7 @@ const RE_COLS = `
 `;
 const RE_COLS_LEGACY = `
   id, routine_day_id, exercise_id, orden, series, reps_min, reps_max,
-  duracion_seg, peso_objetivo_kg, descanso_seg, notas,
+  duracion_seg, peso_objetivo_kg, descanso_seg, notas, superset_group,
   exercise:exercises!inner(
     ${EX_COLS},
     muscle_group:muscle_groups!inner(id,nombre,slug),
@@ -34,7 +34,7 @@ async function selectRoutineExercises(
     .in("routine_day_id", dayIds)
     .order("orden");
   if (!error) return data ?? [];
-  if (/superset_group/i.test(error.message)) {
+  if (/rir_objetivo|superset_group/i.test(error.message)) {
     const { data: fallback } = await supabase
       .from("routine_exercises")
       .select(RE_COLS_LEGACY)
@@ -59,6 +59,7 @@ export type SetLog = {
   peso_kg: number | null;
   reps: number | null;
   duracion_seg: number | null;
+  rir: number | null;
   completada: boolean;
   created_at: string;
 };

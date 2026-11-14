@@ -183,7 +183,13 @@ export function SessionView({
   // Optimistic + server save
   async function commitSet(
     serieNumero: number,
-    data: { peso_kg: number | null; reps: number | null; completada: boolean; duracion_seg?: number | null },
+    data: {
+      peso_kg: number | null;
+      reps: number | null;
+      rir?: number | null;
+      completada: boolean;
+      duracion_seg?: number | null;
+    },
   ) {
     // Local update
     setLogs((prev) => {
@@ -208,8 +214,9 @@ export function SessionView({
         reps: data.reps,
         duracion_seg: data.duracion_seg ?? null,
         completada: data.completada,
+        rir: data.rir ?? null,
         created_at: new Date().toISOString(),
-      });
+      } as SetLog);
       return next;
     });
 
@@ -231,6 +238,7 @@ export function SessionView({
       pesoKg: data.peso_kg,
       reps: data.reps,
       duracionSeg: data.duracion_seg ?? null,
+      rir: data.rir ?? null,
       completada: data.completada,
     });
   }
@@ -396,8 +404,10 @@ export function SessionView({
                 objetivoPeso={current.peso_objetivo_kg}
                 objetivoRepsMin={current.reps_min}
                 objetivoRepsMax={current.reps_max}
+                rirObjetivo={current.rir_objetivo}
                 initialPeso={existing?.peso_kg ?? lastSet?.peso_kg ?? current.peso_objetivo_kg}
                 initialReps={existing?.reps ?? lastSet?.reps ?? current.reps_max ?? current.reps_min}
+                initialRir={existing?.rir ?? null}
                 initialCompletada={existing?.completada}
                 stepKg={stepKg}
                 onCommit={(v) => commitSet(num, v)}

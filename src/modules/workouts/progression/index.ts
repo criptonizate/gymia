@@ -46,6 +46,12 @@ export type Suggestion =
       descripcion: string;
     }
   | {
+      kind: "subir_reps";
+      nueva_reps_min: number;
+      nueva_reps_max: number;
+      descripcion: string;
+    }
+  | {
       kind: "subir_tiempo";
       nueva_duracion_seg: number;
       descripcion: string;
@@ -189,7 +195,7 @@ export function suggestOnSuperar(target: CurrentTarget): Suggestion {
   return {
     kind: "subir_peso",
     nuevo_peso_kg: nuevoPeso,
-    descripcion: `Superaste el objetivo. Subí a ${formatKg(nuevoPeso)} la próxima.`,
+    descripcion: `Ciclo nuevo: subí a ${formatKg(nuevoPeso)} y arrancá en el mínimo de reps.`,
   };
 }
 
@@ -206,15 +212,15 @@ export function suggestOnTiempoCompleto(target: CurrentTarget): Suggestion {
 // --------------------------- Auto-regla 25 % -----------------------------
 
 /**
- * Regla automática si el user no elige nada:
- *  - Supera el tope en TODAS las series → +peso.
- *  - Tiempo completo → +5 s. Tiempo incompleto → mantener.
- *  - La última serie SÍ llegó al mínimo (reps_min) → mantener. Esa es la
- *    señal real de que la carga es apropiada aunque las primeras cayeran
- *    por fatiga acumulada.
- *  - La última serie quedó por debajo del mínimo (RPE 10 falló temprano)
- *    O el conjunto deja >= 40 % de faltante → bajar un escalón de peso.
- *  - En cualquier otro caso → mantener.
+ * Doble progresión (ACSM / spec):
+ *  - Si ALL series llegaron al reps_max → subir peso un escalón y resetear
+ *    objetivo de reps al reps_min (ciclo nuevo).
+ *  - Si TODAS las series superaron el mínimo pero no llegaron al tope → la
+ *    próxima subís 1 rep de objetivo (el user sigue en el mismo peso,
+ *    pero con más reps como target). Devuelve `subir_reps`.
+ *  - Si la última cayó por debajo del mínimo Y faltó ≥ 40% → bajar peso.
+ *  - Caso tiempo: igual que antes.
+ *  - Default: mantener.
  */
 export function autoSuggestion(
   target: CurrentTarget,
@@ -228,18 +234,37 @@ export function autoSuggestion(
       : { kind: "igual", descripcion: "Mantener el tiempo objetivo" };
   }
 
-  if (a.supero) return suggestOnSuperar(target);
+  if (a.supero) {
+    // Tocaste el tope en todas las series → ciclo nuevo: + peso, reset reps.
+    return suggestOnSuperar(target);
+  }
 
   const minObjetivo = target.reps_min ?? 0;
-  const ultima = results[results.length - 1];
-  const ultimaOk =
-    ultima && (ultima.reps ?? 0) >= Math.max(1, minObjetivo);
+  const maxObjetivo = target.reps_max ?? 0;
+  const todasPorEncimaMin =
+    target.series > 0 &&
+    results.length === target.series &&
+    results.every((r) => (r.reps ?? 0) >= minObjetivo);
 
-  // Si bancaste el rango hasta el final, la carga está bien aunque el resto
-  // haya ido bajando: mantener y que progrese orgánicamente.
-  if (ultimaOk) return { kind: "igual", descripcion: "Mantener el objetivo" };
+  // Doble progresión parcial: todas las series ≥ min pero no llegaste al
+  // tope. Subí 1 rep de objetivo (progresás en reps antes que en peso).
+  if (todasPorEncimaMin && maxObjetivo > minObjetivo) {
+    const promedio =
+      results.reduce((acc, r) => acc + (r.reps ?? 0), 0) / results.length;
+    // Sugerimos el próximo rango (reps_min+1, reps_max) salvo que ya estés
+    // cerca del tope → entonces mantener y esperar superar la próxima.
+    if (promedio < maxObjetivo - 0.5) {
+      return {
+        kind: "subir_reps",
+        nueva_reps_min: Math.min(maxObjetivo, (target.reps_min ?? 0) + 1),
+        nueva_reps_max: maxObjetivo,
+        descripcion: "Apuntá a una rep más en todas las series la próxima",
+      };
+    }
+    return { kind: "igual", descripcion: "Mantener y empujar a tocar el tope" };
+  }
 
-  // Si la última cayó clarísimo o el conjunto faltó mucho, recién bajamos.
+  // La última cayó clarísimo o el conjunto faltó mucho → bajar peso.
   if (a.faltanteRatio >= 0.4) return suggestOnNoLlegar(target).bajarPeso;
 
   return { kind: "igual", descripcion: "Mantener el objetivo" };
@@ -267,9 +292,17 @@ export function applySuggestion(
     case "igual":
       return target;
     case "subir_peso":
+      // Doble progresión: al subir peso, el próximo ciclo arranca en
+      // reps_min. El rango se mantiene.
       return { ...target, peso_objetivo_kg: s.nuevo_peso_kg };
     case "subir_tiempo":
       return { ...target, duracion_seg: s.nueva_duracion_seg };
+    case "subir_reps":
+      return {
+        ...target,
+        reps_min: s.nueva_reps_min,
+        reps_max: s.nueva_reps_max,
+      };
   }
 }
 

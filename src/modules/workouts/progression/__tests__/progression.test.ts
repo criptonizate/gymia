@@ -104,15 +104,19 @@ describe("suggestOnNoLlegar", () => {
 });
 
 describe("auto 25%", () => {
-  it("la última llega al mínimo → mantener", () => {
-    // Faltante total 2/36 pero última serie llegó al mínimo (reps_min=8)
+  it("todas ≥ mínimo pero no en tope → subir reps objetivo", () => {
+    // reps_min=8, reps_max=12. Todas ≥ 8 pero debajo de 12 → progresar en reps.
     const r: SetResult[] = [
-      { completada: true, reps: 12 },
-      { completada: true, reps: 12 },
       { completada: true, reps: 10 },
+      { completada: true, reps: 9 },
+      { completada: true, reps: 8 },
     ];
     const s = autoSuggestion(target(), r);
-    expect(s.kind).toBe("igual");
+    expect(s.kind).toBe("subir_reps");
+    if (s.kind === "subir_reps") {
+      expect(s.nueva_reps_min).toBe(9);
+      expect(s.nueva_reps_max).toBe(12);
+    }
   });
 
   it("última cae por debajo del mínimo y faltante grande → bajar peso", () => {
@@ -129,7 +133,7 @@ describe("auto 25%", () => {
 
   it("última cae pero faltante moderado → mantener (no penalizar fatiga)", () => {
     // Última=6 (< min 8) pero sólo 22% faltante total — es una mala serie
-    // suelta, el user ya está exprimido; mantener.
+    // suelta, mantener.
     const r: SetResult[] = [
       { completada: true, reps: 11 },
       { completada: true, reps: 11 },
@@ -171,6 +175,28 @@ describe("tiempo", () => {
       { completada: false },
     ];
     expect(autoSuggestion(t, r).kind).toBe("igual");
+  });
+});
+
+describe("doble progresión", () => {
+  it("al tocar el tope en todas las series → +peso", () => {
+    const r: SetResult[] = [
+      { completada: true, reps: 12 },
+      { completada: true, reps: 12 },
+      { completada: true, reps: 12 },
+    ];
+    const s = autoSuggestion(target(), r);
+    expect(s.kind).toBe("subir_peso");
+  });
+
+  it("todas al tope menos una (mínimo) → sube reps, no peso", () => {
+    const r: SetResult[] = [
+      { completada: true, reps: 12 },
+      { completada: true, reps: 12 },
+      { completada: true, reps: 8 },
+    ];
+    const s = autoSuggestion(target(), r);
+    expect(s.kind).toBe("subir_reps");
   });
 });
 

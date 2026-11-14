@@ -199,9 +199,9 @@ describe("RuleBasedGenerator", () => {
     const compPeso = p.dias[0].ejercicios.find(
       (e) => e.tipo === "compuesto" && e.tipo_registro === "peso_reps",
     )!;
-    expect(compPeso.series).toBe(5);
+    expect(compPeso.series).toBe(4);
     expect(compPeso.reps_min).toBe(4);
     expect(compPeso.reps_max).toBe(6);
-    expect(compPeso.descanso_seg).toBe(180);
+    expect(compPeso.descanso_seg).toBe(210);
   });
 });

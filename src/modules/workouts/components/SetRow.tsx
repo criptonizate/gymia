@@ -12,15 +12,18 @@ type Props = {
   objetivoPeso?: number | null;
   objetivoRepsMin?: number | null;
   objetivoRepsMax?: number | null;
+  rirObjetivo?: number | null;
   /** Valores precargados (última vez o guardado). */
   initialPeso?: number | null;
   initialReps?: number | null;
+  initialRir?: number | null;
   initialCompletada?: boolean;
   /** Paso de peso (±2.5 ó ±5). */
   stepKg: number;
   onCommit: (values: {
     peso_kg: number | null;
     reps: number | null;
+    rir: number | null;
     completada: boolean;
   }) => void;
 };
@@ -31,8 +34,10 @@ export function SetRow({
   objetivoPeso,
   objetivoRepsMin,
   objetivoRepsMax,
+  rirObjetivo,
   initialPeso,
   initialReps,
+  initialRir,
   initialCompletada = false,
   stepKg,
   onCommit,
@@ -43,16 +48,17 @@ export function SetRow({
   const [reps, setReps] = useState<number | null>(
     initialReps ?? objetivoRepsMax ?? objetivoRepsMin ?? null,
   );
+  const [rir, setRir] = useState<number | null>(initialRir ?? null);
   const [done, setDone] = useState<boolean>(initialCompletada);
   const unit = useUnit();
 
-  // reset si cambian los valores iniciales (switch de ejercicio)
   useEffect(() => {
     setPeso(initialPeso ?? objetivoPeso ?? null);
     setReps(initialReps ?? objetivoRepsMax ?? objetivoRepsMin ?? null);
+    setRir(initialRir ?? null);
     setDone(initialCompletada);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPeso, initialReps, initialCompletada]);
+  }, [initialPeso, initialReps, initialRir, initialCompletada]);
 
   const missed =
     done &&
@@ -62,22 +68,20 @@ export function SetRow({
 
   // Debounce de 300 ms; el ✓ hace flush inmediato.
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function flush(values: {
+  type CommitValues = {
     peso_kg: number | null;
     reps: number | null;
+    rir: number | null;
     completada: boolean;
-  }) {
+  };
+  function flush(values: CommitValues) {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     onCommit(values);
   }
-  function commit(values: {
-    peso_kg: number | null;
-    reps: number | null;
-    completada: boolean;
-  }) {
+  function commit(values: CommitValues) {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
@@ -94,7 +98,7 @@ export function SetRow({
   function toggleDone() {
     const next = !done;
     setDone(next);
-    flush({ peso_kg: peso, reps, completada: next });
+    flush({ peso_kg: peso, reps, rir, completada: next });
   }
 
   return (
@@ -119,7 +123,7 @@ export function SetRow({
           onChange={(v) => {
             const kg = v == null ? null : fromDisplay(v, unit);
             setPeso(kg);
-            commit({ peso_kg: kg, reps, completada: done });
+            commit({ peso_kg: kg, reps, rir, completada: done });
           }}
           step={unit === "lb" ? Math.round(stepKg * KG_TO_LB) : stepKg}
         />
@@ -130,9 +134,18 @@ export function SetRow({
         value={reps}
         onChange={(v) => {
           setReps(v);
-          commit({ peso_kg: peso, reps: v, completada: done });
+          commit({ peso_kg: peso, reps: v, rir, completada: done });
         }}
         step={1}
+      />
+
+      <RirPill
+        value={rir}
+        objetivo={rirObjetivo ?? null}
+        onChange={(v) => {
+          setRir(v);
+          commit({ peso_kg: peso, reps, rir: v, completada: done });
+        }}
       />
 
       <button
@@ -220,4 +233,61 @@ function Field({
 function roundToStep(n: number, step: number): number {
   if (step >= 1) return Math.round(n);
   return Math.round(n / step) * step;
+}
+
+/** Pastilla de RIR (reps en reserva). null = no registrado. */
+function RirPill({
+  value,
+  objetivo,
+  onChange,
+}: {
+  value: number | null;
+  objetivo: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const label = value == null ? "RIR" : `RIR ${value}`;
+  // Reacción visual a si estás cerca del objetivo
+  const highlight =
+    objetivo != null && value != null
+      ? value <= objetivo
+        ? "text-primary"
+        : "text-warning"
+      : "text-muted-foreground";
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={value == null ? "Elegir RIR" : `RIR ${value}`}
+        className={`flex h-11 min-w-12 flex-none items-center justify-center rounded-full border border-border bg-background px-2 text-[10px] font-bold uppercase ${highlight}`}
+      >
+        {label}
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute bottom-full right-0 z-30 mb-1 flex gap-1 rounded-xl border border-border bg-popover p-1 shadow-lg"
+        >
+          {[0, 1, 2, 3, 4, null].map((v, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                onChange(v);
+                setOpen(false);
+              }}
+              className={
+                "min-h-9 min-w-9 rounded-lg px-2 text-xs font-semibold " +
+                (value === v
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground")
+              }
+            >
+              {v == null ? "—" : v}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

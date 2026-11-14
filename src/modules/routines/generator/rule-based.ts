@@ -256,6 +256,7 @@ export const RuleBasedGenerator: RoutineGenerator = {
             muscle_group_slug: picked_ex.muscle_group.slug,
             equipment_slug: picked_ex.equipment.slug,
             ...presc,
+            rir_objetivo: presc.rir_objetivo ?? null,
           });
 
           if (slot.kind === "core") prevCorePatron = picked_ex.patron;

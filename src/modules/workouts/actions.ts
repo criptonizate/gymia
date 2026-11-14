@@ -84,6 +84,7 @@ export type LogSetInput = {
   pesoKg: number | null;
   reps: number | null;
   duracionSeg: number | null;
+  rir?: number | null;
   completada: boolean;
 };
 
@@ -111,6 +112,7 @@ export async function logSet(input: LogSetInput): Promise<Result<{ id: string }>
         peso_kg: input.pesoKg,
         reps: input.reps,
         duracion_seg: input.duracionSeg,
+        rir: input.rir ?? null,
         completada: input.completada,
       },
       { onConflict: "session_id,routine_exercise_id,numero_serie" },

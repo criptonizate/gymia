@@ -33,7 +33,13 @@ z.config({
 });
 
 export const Nivel = z.enum(["principiante", "intermedio", "avanzado"]);
-export const Objetivo = z.enum(["hipertrofia", "fuerza", "general"]);
+export const Objetivo = z.enum([
+  "hipertrofia",
+  "fuerza",
+  "general",
+  "perdida_grasa",
+  "rendimiento_deportivo",
+]);
 export const TipoRegistro = z.enum(["peso_reps", "reps", "tiempo"]);
 
 export const Uuid = z.string().uuid();
@@ -79,6 +85,7 @@ export const LogSetInput = z.object({
   pesoKg: z.number().min(0).max(999).nullable(),
   reps: z.number().int().min(0).max(1000).nullable(),
   duracionSeg: z.number().int().min(0).max(3600).nullable(),
+  rir: z.number().int().min(0).max(5).nullable().optional(),
   completada: z.boolean(),
 });
 

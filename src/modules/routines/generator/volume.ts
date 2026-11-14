@@ -62,6 +62,14 @@ const BASE: Record<Objetivo, VolumeMap> = {
     pecho: 3, espalda: 3, hombros: 2, biceps: 2, triceps: 2,
     cuadriceps: 2, isquios: 2, gluteos: 2, gemelos: 1, core: 1,
   },
+  perdida_grasa: {
+    pecho: 3, espalda: 3, hombros: 2, biceps: 1, triceps: 1,
+    cuadriceps: 3, isquios: 2, gluteos: 2, gemelos: 1, core: 2,
+  },
+  rendimiento_deportivo: {
+    pecho: 2, espalda: 3, hombros: 2, biceps: 1, triceps: 1,
+    cuadriceps: 3, isquios: 3, gluteos: 3, gemelos: 1, core: 2,
+  },
 };
 const NIVEL_MULT: Record<Nivel, number> = {
   principiante: 0.85, // antes 0.75 → dejaba grupos grandes bajo MEV

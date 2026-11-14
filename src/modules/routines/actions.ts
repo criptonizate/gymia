@@ -83,6 +83,7 @@ export async function savePlan(plan: RoutinePlan): Promise<Result<{ routineId: s
           duracion_seg: e.duracion_seg ?? "",
           descanso_seg: e.descanso_seg,
           superset_group: e.superset_group ?? "",
+          rir_objetivo: e.rir_objetivo ?? "",
         })),
       })),
     },

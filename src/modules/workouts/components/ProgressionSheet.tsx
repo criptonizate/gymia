@@ -72,9 +72,39 @@ export function ProgressionSheet({
       { icon: Equal, title: "Dejar igual", subtitle: g.igual.descripcion, s: g.igual },
     ];
   } else {
-    options = [
-      { icon: Check, title: "Objetivo cumplido", subtitle: "Mantener para progresar", s: { kind: "igual", descripcion: "Mantener" } },
-    ];
+    // Doble progresión: si todas las series ≥ mínimo pero no llegaron al tope,
+    // ofrecemos subir las reps objetivo (mismo peso).
+    const minObjetivo = target.reps_min ?? 0;
+    const maxObjetivo = target.reps_max ?? 0;
+    const todasPorEncimaMin =
+      target.series > 0 &&
+      results.length === target.series &&
+      results.every((r) => (r.reps ?? 0) >= minObjetivo);
+    if (todasPorEncimaMin && maxObjetivo > minObjetivo) {
+      options = [
+        {
+          icon: ArrowUp,
+          title: "Subir las reps objetivo",
+          subtitle: `Próxima: ${minObjetivo + 1}-${maxObjetivo} reps al mismo peso`,
+          s: {
+            kind: "subir_reps",
+            nueva_reps_min: minObjetivo + 1,
+            nueva_reps_max: maxObjetivo,
+            descripcion: "Subir reps",
+          },
+        },
+        {
+          icon: Equal,
+          title: "Dejar igual",
+          subtitle: "Mantener el rango",
+          s: { kind: "igual", descripcion: "Mantener" },
+        },
+      ];
+    } else {
+      options = [
+        { icon: Check, title: "Objetivo cumplido", subtitle: "Mantener para progresar", s: { kind: "igual", descripcion: "Mantener" } },
+      ];
+    }
   }
 
   return (

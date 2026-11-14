@@ -6,7 +6,12 @@ import type {
   TipoRegistro,
 } from "@/modules/exercises/types";
 
-export type Objetivo = "hipertrofia" | "fuerza" | "general";
+export type Objetivo =
+  | "hipertrofia"
+  | "fuerza"
+  | "general"
+  | "perdida_grasa"
+  | "rendimiento_deportivo";
 export type DiasSemana = 2 | 3 | 4 | 5;
 export type Semanas = 1 | 2 | 3 | 4;
 export type Entorno = "casa" | "gimnasio";
@@ -43,6 +48,7 @@ export type PlannedExercise = {
   duracion_seg?: number;
   descanso_seg: number;
   superset_group?: number | null;
+  rir_objetivo?: number | null;
 };
 
 export type PlannedDay = {

@@ -10,7 +10,9 @@ import { ExerciseHero } from "@/modules/exercises/components/ExerciseHero";
 import { YoutubeBlock } from "@/modules/exercises/components/YoutubeBlock";
 import { History } from "@/modules/exercises/components/History";
 import { FavoriteButton } from "@/modules/exercises/components/FavoriteButton";
+import { EditMediaButton } from "@/modules/exercises/components/EditMediaSheet";
 import { getExerciseHistory } from "@/modules/workouts/queries";
+import { isAdmin } from "@/lib/supabase/profile";
 
 export const instant = false;
 
@@ -29,10 +31,11 @@ export default async function EjercicioDetallePage({
   const ex = await getExerciseBySlug(slug);
   if (!ex) notFound();
 
-  const [userVideoId, history, favorito] = await Promise.all([
+  const [userVideoId, history, favorito, admin] = await Promise.all([
     getUserExerciseVideo(ex.id),
     getExerciseHistory(ex.id, 10),
     isFavorite(ex.id),
+    isAdmin(),
   ]);
   const effectiveVideoId = userVideoId ?? ex.youtube_video_id ?? null;
 
@@ -47,6 +50,14 @@ export default async function EjercicioDetallePage({
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2">
+          {admin && (
+            <EditMediaButton
+              exerciseId={ex.id}
+              exerciseNombre={ex.nombre}
+              muscleGroupSlug={ex.muscle_group.slug}
+              initialFrames={ex.media_frames}
+            />
+          )}
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
             {NIVEL_LABEL[ex.nivel_minimo]}
           </span>

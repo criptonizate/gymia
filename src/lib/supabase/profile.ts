@@ -29,3 +29,8 @@ export async function getProfile(): Promise<Profile | null> {
 export function isProfileComplete(p: Profile | null): boolean {
   return !!(p && p.nombre && p.nivel && p.objetivo);
 }
+
+export async function isAdmin(): Promise<boolean> {
+  const p = await getProfile();
+  return p?.role === "admin";
+}

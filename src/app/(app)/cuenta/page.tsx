@@ -10,9 +10,11 @@ import { MuscleGroupChart } from "@/modules/progress/components/MuscleGroupChart
 import { RecordsList } from "@/modules/progress/components/RecordsList";
 import { EvolutionPicker } from "@/modules/progress/components/EvolutionPicker.lazy";
 import { ProfileEditor } from "@/modules/progress/components/ProfileEditor";
+import { ProfileExtendedEditor } from "@/modules/progress/components/ProfileExtendedEditor";
 import { BodyWeightCard } from "@/modules/progress/components/BodyWeightCard";
 import { RecentSessionsCard } from "@/modules/progress/components/RecentSessionsCard";
 import { WeekCompareCard } from "@/modules/progress/components/WeekCompareCard";
+import { StalledCard } from "@/modules/progress/components/StalledCard";
 import { PresetCountdownToggle } from "@/components/preset-countdown-toggle";
 import {
   getBodyWeights,
@@ -20,6 +22,7 @@ import {
   getKpis,
   getRecentSessions,
   getSetsByMuscle,
+  getStalledExercises,
   getTrainingDays,
   getWeekCompare,
   getWeeklyVolume,
@@ -38,6 +41,7 @@ export default async function CuentaPage() {
     bodyWeights,
     recent,
     weekCompare,
+    stalled,
   ] = await Promise.all([
     getProfile(),
     getKpis(),
@@ -48,6 +52,7 @@ export default async function CuentaPage() {
     getBodyWeights(30),
     getRecentSessions(30),
     getWeekCompare(),
+    getStalledExercises(),
   ]);
 
   return (
@@ -62,6 +67,7 @@ export default async function CuentaPage() {
         </h2>
         <KpiGrid data={kpis} />
         <WeekCompareCard data={weekCompare} />
+        <StalledCard items={stalled} />
       </section>
 
       <section className="flex flex-col gap-3">
@@ -91,6 +97,7 @@ export default async function CuentaPage() {
       </section>
 
       {profile && <ProfileEditor profile={profile} />}
+      {profile && <ProfileExtendedEditor profile={profile} />}
 
       <section className="flex flex-col gap-3">
         <h2 className="px-2 text-sm font-semibold text-muted-foreground">

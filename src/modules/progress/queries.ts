@@ -158,6 +158,43 @@ export type WeekCompare = {
   volumen_prev: number;
 };
 
+export type StalledExercise = {
+  exercise_id: string;
+  nombre: string;
+  slug: string;
+  sesiones: number;
+  peso_max_actual: number;
+  peso_max_hace_3: number;
+};
+
+export async function getStalledExercises(): Promise<StalledExercise[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("user_stalled_exercises");
+  return (data as StalledExercise[] | null) ?? [];
+}
+
+export type PeriodCompare = {
+  weeks: number;
+  sesiones_actual: number;
+  sesiones_prev: number;
+  volumen_actual: number;
+  volumen_prev: number;
+};
+
+export async function getPeriodCompare(weeks = 4): Promise<PeriodCompare> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("user_period_compare", { weeks });
+  return (
+    (data as PeriodCompare | null) ?? {
+      weeks,
+      sesiones_actual: 0,
+      sesiones_prev: 0,
+      volumen_actual: 0,
+      volumen_prev: 0,
+    }
+  );
+}
+
 export async function getWeekCompare(): Promise<WeekCompare> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("user_week_compare");

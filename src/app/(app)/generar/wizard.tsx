@@ -22,7 +22,7 @@ import type { Nivel } from "@/modules/exercises/types";
 
 type Config = Partial<GeneratorConfig>;
 
-const DIAS: DiasSemana[] = [2, 3, 4, 5];
+const DIAS: DiasSemana[] = [2, 3, 4, 5, 6];
 const SEMANAS: Semanas[] = [1, 2, 3, 4];
 const NIVELES: { v: Nivel; l: string }[] = [
   { v: "principiante", l: "Principiante" },
@@ -32,7 +32,9 @@ const NIVELES: { v: Nivel; l: string }[] = [
 const OBJETIVOS: { v: Objetivo; l: string }[] = [
   { v: "hipertrofia", l: "Hipertrofia" },
   { v: "fuerza", l: "Fuerza" },
-  { v: "general", l: "General" },
+  { v: "perdida_grasa", l: "Pérdida de grasa" },
+  { v: "rendimiento_deportivo", l: "Rendimiento deportivo" },
+  { v: "general", l: "Acondicionamiento general" },
 ];
 
 type Preset = {

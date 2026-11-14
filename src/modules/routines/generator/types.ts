@@ -12,7 +12,7 @@ export type Objetivo =
   | "general"
   | "perdida_grasa"
   | "rendimiento_deportivo";
-export type DiasSemana = 2 | 3 | 4 | 5;
+export type DiasSemana = 2 | 3 | 4 | 5 | 6;
 export type Semanas = 1 | 2 | 3 | 4;
 export type Entorno = "casa" | "gimnasio";
 

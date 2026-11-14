@@ -15,6 +15,8 @@ const NIVEL: { v: Nivel; l: string }[] = [
 const OBJ: { v: Objetivo; l: string }[] = [
   { v: "hipertrofia", l: "Hipertrofia" },
   { v: "fuerza", l: "Fuerza" },
+  { v: "perdida_grasa", l: "Pérdida de grasa" },
+  { v: "rendimiento_deportivo", l: "Rendimiento deportivo" },
   { v: "general", l: "General" },
 ];
 

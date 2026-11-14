@@ -16,7 +16,19 @@ export async function fetchEvolution(exerciseId: string) {
 export type SaveProfileInput = {
   nombre?: string;
   nivel?: "principiante" | "intermedio" | "avanzado";
-  objetivo?: "hipertrofia" | "fuerza" | "general";
+  objetivo?:
+    | "hipertrofia"
+    | "fuerza"
+    | "general"
+    | "perdida_grasa"
+    | "rendimiento_deportivo";
+  edad?: number | null;
+  sexo?: "masculino" | "femenino" | "otro" | null;
+  altura_cm?: number | null;
+  duracion_sesion_min?: number | null;
+  limitaciones?: string[];
+  grupos_prioritarios?: string[];
+  otros_deportes?: string[];
 };
 
 export async function logBodyWeight(
@@ -57,6 +69,16 @@ export async function saveProfile(
   if (patch.nombre !== undefined) clean.nombre = patch.nombre.trim() || null;
   if (patch.nivel !== undefined) clean.nivel = patch.nivel;
   if (patch.objetivo !== undefined) clean.objetivo = patch.objetivo;
+  if (patch.edad !== undefined) clean.edad = patch.edad;
+  if (patch.sexo !== undefined) clean.sexo = patch.sexo;
+  if (patch.altura_cm !== undefined) clean.altura_cm = patch.altura_cm;
+  if (patch.duracion_sesion_min !== undefined)
+    clean.duracion_sesion_min = patch.duracion_sesion_min;
+  if (patch.limitaciones !== undefined) clean.limitaciones = patch.limitaciones;
+  if (patch.grupos_prioritarios !== undefined)
+    clean.grupos_prioritarios = patch.grupos_prioritarios;
+  if (patch.otros_deportes !== undefined)
+    clean.otros_deportes = patch.otros_deportes;
 
   const { error } = await supabase
     .from("profiles")

@@ -172,11 +172,24 @@ export function pickSplit(
       templates: [DIA_TORSO, legsMain, DIA_TORSO, DIA_PIERNAS_POST],
     };
   }
-  // 5 días: Piernas (cuád-dominante) y Pierna (posterior-dominante) para
-  // dar recovery a cuádriceps.
+  if (dias === 5) {
+    return {
+      split: "Empuje / Tirón / Piernas · cuád / Torso / Pierna · posterior",
+      templates: [DIA_EMPUJE, DIA_TIRON, legsMain, DIA_TORSO, DIA_PIERNAS_POST],
+    };
+  }
+  // 6 días: PPL duplicado (avanzados). Alternamos dominancia en los días
+  // de pierna para no fatigar en exceso un mismo grupo.
   return {
-    split: "Empuje / Tirón / Piernas · cuád / Torso / Pierna · posterior",
-    templates: [DIA_EMPUJE, DIA_TIRON, legsMain, DIA_TORSO, DIA_PIERNAS_POST],
+    split: "Empuje / Tirón / Piernas · cuád / Empuje / Tirón / Pierna · posterior",
+    templates: [
+      DIA_EMPUJE,
+      DIA_TIRON,
+      legsMain,
+      DIA_EMPUJE,
+      DIA_TIRON,
+      DIA_PIERNAS_POST,
+    ],
   };
 }
 

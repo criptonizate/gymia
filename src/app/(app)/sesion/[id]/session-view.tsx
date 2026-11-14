@@ -20,6 +20,7 @@ import { HoldTimer } from "@/modules/workouts/components/HoldTimer";
 import { BusyMachineSheet } from "@/modules/workouts/components/BusyMachineSheet";
 import { PresetCountdown } from "@/modules/workouts/components/PresetCountdown";
 import { ProgressionSheet } from "@/modules/workouts/components/ProgressionSheet";
+import { WarmupTip } from "@/modules/workouts/components/WarmupTip";
 import { readPresetCountdown } from "@/lib/preferences";
 import { applyProgression } from "@/modules/workouts/actions";
 import {
@@ -381,6 +382,12 @@ export function SessionView({
           <p className="text-xs text-muted-foreground">Última vez: {prevSummary}</p>
         )}
       </section>
+
+      {i === 0 && (
+        <section className="px-4 pt-2">
+          <WarmupTip primerEjercicio={activeExercise.nombre} />
+        </section>
+      )}
 
       {/* Series */}
       <section className="flex flex-col gap-2 p-4">

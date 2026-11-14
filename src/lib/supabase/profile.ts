@@ -2,7 +2,14 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type Nivel = "principiante" | "intermedio" | "avanzado";
-export type Objetivo = "hipertrofia" | "fuerza" | "general";
+export type Objetivo =
+  | "hipertrofia"
+  | "fuerza"
+  | "general"
+  | "perdida_grasa"
+  | "rendimiento_deportivo";
+
+export type Sexo = "masculino" | "femenino" | "otro";
 
 export type Profile = {
   id: string;
@@ -10,6 +17,13 @@ export type Profile = {
   role: "user" | "trainer" | "admin";
   nivel: Nivel | null;
   objetivo: Objetivo | null;
+  edad: number | null;
+  sexo: Sexo | null;
+  altura_cm: number | null;
+  limitaciones: string[];
+  duracion_sesion_min: number | null;
+  grupos_prioritarios: string[];
+  otros_deportes: string[];
   created_at: string;
 };
 

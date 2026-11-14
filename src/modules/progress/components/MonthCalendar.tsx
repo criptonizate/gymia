@@ -13,10 +13,9 @@ export function MonthCalendar({ days }: { days: TrainingDay[] }) {
   for (let d = 1; d <= lastDay; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const monthLabel = today.toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = today
+    .toLocaleDateString("es-AR", { month: "long", year: "numeric" })
+    .replace(/^\p{L}/u, (c) => c.toUpperCase());
 
   function key(d: number): string {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;

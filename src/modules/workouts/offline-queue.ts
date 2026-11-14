@@ -7,7 +7,7 @@ import { logSet } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 
 const DB_NAME = "gymia-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = "log_set_queue";
 const MAX_TRIES = 5;
 
@@ -26,6 +26,14 @@ function openDb(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "id" });
+      }
+      // Stores agregados en v2 (session_cache, finish_queue) los crea
+      // offline-session.ts si no existen.
+      if (!db.objectStoreNames.contains("session_cache")) {
+        db.createObjectStore("session_cache", { keyPath: "key" });
+      }
+      if (!db.objectStoreNames.contains("finish_queue")) {
+        db.createObjectStore("finish_queue", { keyPath: "id" });
       }
     };
     req.onsuccess = () => resolve(req.result);

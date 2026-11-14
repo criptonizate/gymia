@@ -1,4 +1,4 @@
-import type { DiasSemana, Nivel, Patron } from "./types";
+import type { DiasSemana, Nivel, Objetivo, Patron } from "./types";
 
 export type SlotKind = "compuesto" | "aislamiento" | "core";
 
@@ -60,6 +60,34 @@ const DIA_PIERNAS: DayTemplate = {
   ],
 };
 
+// Variante para FUERZA con peso muerto convencional como main lift
+// (mg=espalda, patron=bisagra).
+const DIA_PIERNAS_FUERZA: DayTemplate = {
+  split_label: "Piernas · fuerza",
+  slots: [
+    { kind: "compuesto", patrones: ["sentadilla"], musculo: ["cuadriceps"] },
+    { kind: "compuesto", patrones: ["bisagra"], musculo: ["espalda"] },
+    { kind: "aislamiento", musculo: ["cuadriceps"] },
+    { kind: "aislamiento", musculo: ["gluteos"], preferirPolea: true },
+    { kind: "aislamiento", musculo: ["gemelos"] },
+    { kind: "core" },
+  ],
+};
+
+// Variante POSTERIOR-dominante para no pisar cuádriceps 2 días seguidos
+// en el split de 5 días.
+const DIA_PIERNAS_POST: DayTemplate = {
+  split_label: "Pierna (posterior)",
+  slots: [
+    { kind: "compuesto", patrones: ["bisagra"], musculo: ["isquios"] },
+    { kind: "compuesto", patrones: ["bisagra"], musculo: ["gluteos"] },
+    { kind: "aislamiento", musculo: ["isquios"] },
+    { kind: "aislamiento", musculo: ["gluteos"], preferirPolea: true },
+    { kind: "aislamiento", musculo: ["gemelos"] },
+    { kind: "core" },
+  ],
+};
+
 const DIA_TORSO: DayTemplate = {
   split_label: "Torso",
   slots: [
@@ -114,7 +142,15 @@ const DIA_FULL_C: DayTemplate = {
 export function pickSplit(
   dias: DiasSemana,
   nivel: Nivel,
+  objetivo: Objetivo = "hipertrofia",
 ): { split: string; templates: DayTemplate[] } {
+  // Si el objetivo es fuerza y el user es int+, el día de pierna arranca
+  // con peso muerto convencional.
+  const legsMain =
+    objetivo === "fuerza" && nivel !== "principiante"
+      ? DIA_PIERNAS_FUERZA
+      : DIA_PIERNAS;
+
   if (dias === 2) {
     return { split: "Full body A / B", templates: [DIA_FULL_A, DIA_FULL_B] };
   }
@@ -127,19 +163,20 @@ export function pickSplit(
     }
     return {
       split: "Empuje / Tirón / Piernas",
-      templates: [DIA_EMPUJE, DIA_TIRON, DIA_PIERNAS],
+      templates: [DIA_EMPUJE, DIA_TIRON, legsMain],
     };
   }
   if (dias === 4) {
     return {
       split: "Torso / Pierna / Torso / Pierna",
-      templates: [DIA_TORSO, DIA_PIERNAS, DIA_TORSO, DIA_PIERNAS],
+      templates: [DIA_TORSO, legsMain, DIA_TORSO, DIA_PIERNAS_POST],
     };
   }
-  // 5
+  // 5 días: Piernas (cuád-dominante) y Pierna (posterior-dominante) para
+  // dar recovery a cuádriceps.
   return {
-    split: "Empuje / Tirón / Piernas / Torso / Pierna",
-    templates: [DIA_EMPUJE, DIA_TIRON, DIA_PIERNAS, DIA_TORSO, DIA_PIERNAS],
+    split: "Empuje / Tirón / Piernas · cuád / Torso / Pierna · posterior",
+    templates: [DIA_EMPUJE, DIA_TIRON, legsMain, DIA_TORSO, DIA_PIERNAS_POST],
   };
 }
 

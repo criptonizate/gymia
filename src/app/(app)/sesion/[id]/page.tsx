@@ -1,6 +1,7 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getSessionContext } from "@/modules/workouts/queries";
 import { SessionView } from "./session-view";
+import { OfflineSessionFallback } from "./offline-fallback";
 
 export const instant = false;
 
@@ -10,11 +11,17 @@ export default async function SesionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ctx = await getSessionContext(id);
-  if (!ctx) notFound();
+  let ctx: Awaited<ReturnType<typeof getSessionContext>> = null;
+  try {
+    ctx = await getSessionContext(id);
+  } catch {
+    // Supabase inaccesible (offline). Dejamos que el cliente intente
+    // levantar desde IndexedDB.
+  }
+  if (!ctx) {
+    return <OfflineSessionFallback sessionId={id} />;
+  }
   if (ctx.session.finished_at) {
-    // Sesión ya terminada: por ahora se vuelve a Hoy. (La edición del
-    // historial se accede desde el detalle del ejercicio.)
     redirect("/hoy");
   }
   return (

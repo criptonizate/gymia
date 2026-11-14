@@ -338,7 +338,7 @@ export async function addExerciseToDay(
   // Leer el objetivo/nivel de la rutina para prescripción
   const { data: ex } = await supabase
     .from("exercises")
-    .select("tipo, tipo_registro")
+    .select("tipo, tipo_registro, muscle_group:muscle_groups!inner(slug)")
     .eq("id", exerciseId)
     .maybeSingle();
   if (!ex) return { ok: false, error: "Ejercicio inexistente." };
@@ -352,7 +352,9 @@ export async function addExerciseToDay(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const r = (dayAndRoutine as any).routine;
-  const presc = prescripcion(r.objetivo, ex.tipo, ex.tipo_registro, r.nivel);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mgSlug = (ex as any).muscle_group?.slug as string | undefined;
+  const presc = prescripcion(r.objetivo, ex.tipo, ex.tipo_registro, r.nivel, mgSlug);
 
   // Último orden
   const { data: last } = await supabase

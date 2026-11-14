@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { unwrap } from "@/lib/supabase/errors";
 import type {
@@ -10,23 +11,25 @@ import type {
 const BASE_COLS =
   "id, nombre, slug, muscle_group_id, secondary_muscles, equipment_id, patron, tipo, tipo_registro, nivel_minimo, instrucciones, errores_comunes, media_url, media_frames, youtube_query, youtube_video_id";
 
-export async function listMuscleGroups(): Promise<MuscleGroup[]> {
+// Deduplicados por render con React.cache (los datos son globales y el
+// catálogo cambia una vez cada muchos días).
+export const listMuscleGroups = cache(async (): Promise<MuscleGroup[]> => {
   const supabase = await createClient();
   const data = unwrap(
     await supabase.from("muscle_groups").select("id, nombre, slug").order("nombre"),
     "listMuscleGroups",
   );
   return (data as MuscleGroup[] | null) ?? [];
-}
+});
 
-export async function listEquipment(): Promise<Equipment[]> {
+export const listEquipment = cache(async (): Promise<Equipment[]> => {
   const supabase = await createClient();
   const data = unwrap(
     await supabase.from("equipment").select("id, nombre, slug").order("nombre"),
     "listEquipment",
   );
   return (data as Equipment[] | null) ?? [];
-}
+});
 
 export type ListExercisesFilters = {
   q?: string;

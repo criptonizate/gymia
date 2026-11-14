@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
 
 :root {
   --background: #0a0a0b;
@@ -24,6 +25,7 @@
   --destructive: #ef4444;
   --destructive-foreground: #f2f4f7;
   --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.15);
   --border: #2a2e35;
   --input: #2a2e35;
   --ring: #38bdf8;
@@ -52,6 +54,7 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --warning: #d97706;
+  --warning-soft: rgba(217, 119, 6, 0.12);
   --border: #d1d5db;
   --input: #d1d5db;
   --ring: #0284c7;
@@ -87,7 +90,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 html {
@@ -124,6 +126,20 @@ img {
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
+}
+
+/* Respetar prefers-reduced-motion global: cualquier animación o transición
+   se reduce a casi cero. Componentes específicos pueden anular con
+   `motion-reduce:` en su clase. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .tabular-nums {

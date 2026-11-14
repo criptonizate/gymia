@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -12,13 +12,35 @@ type Props = {
 };
 
 export function BottomSheet({ open, onClose, title, children }: Props) {
-  // Altura visible (VisualViewport se achica al abrir el teclado en iOS).
   const [vhPx, setVhPx] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousActive = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
+    // Guardar el foco anterior y mover al dialog
+    previousActive.current = document.activeElement as HTMLElement | null;
+    setTimeout(() => dialogRef.current?.focus(), 0);
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key === "Tab" && dialogRef.current) {
+        // Focus trap simple
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     const vv = typeof window !== "undefined" ? window.visualViewport : null;
     const sync = () => {
@@ -35,6 +57,8 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
       vv?.removeEventListener("scroll", sync);
       document.body.style.overflow = "";
       setVhPx(null);
+      // Restaurar foco al cerrar
+      previousActive.current?.focus?.();
     };
   }, [open, onClose]);
 
@@ -50,16 +74,19 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
         aria-hidden
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : "Panel"}
+        tabIndex={-1}
         style={maxH ? { maxHeight: `${maxH}px` } : undefined}
-        className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-popover text-popover-foreground shadow-xl animate-in slide-in-from-bottom duration-200"
+        className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-popover text-popover-foreground shadow-xl animate-in slide-in-from-bottom duration-200 outline-none motion-reduce:animate-none"
       >
         <div className="relative flex items-center justify-center p-4">
           <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-border" />
           {title && (
-            <h2 className="mt-1 text-base font-semibold">{title}</h2>
+            <h2 id={titleId} className="mt-1 text-base font-semibold">{title}</h2>
           )}
           <button
             onClick={onClose}

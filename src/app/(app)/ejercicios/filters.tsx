@@ -102,7 +102,9 @@ function ChipRow({
   allLabel: string;
 }) {
   return (
-    <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] [&::-webkit-scrollbar]:hidden"
+    >
       <div className="flex w-max items-center gap-2">
         <Chip active={active === ""} onClick={() => onPick("")}>
           {allLabel}

@@ -53,20 +53,30 @@ export type Suggestion =
 
 // --------------------------- Escalones de peso ---------------------------
 
-/** 2,5 kg en mancuernas, polea y barra Z; 5 kg en barra/máquina/smith. */
-export function weightStep(equipmentSlug: string): number {
-  switch (equipmentSlug) {
-    case "mancuernas":
-    case "polea":
-    case "barra-z":
-      return 2.5;
-    case "barra":
-    case "maquina":
-    case "smith":
-      return 5;
-    default:
-      return 2.5;
-  }
+/**
+ * Escalón de peso según equipo. Opcionalmente ajustado por nivel: un
+ * avanzado no puede sumar +5 kg por sesión en barra, se parte en 2.5 kg.
+ */
+export function weightStep(
+  equipmentSlug: string,
+  nivel?: "principiante" | "intermedio" | "avanzado",
+): number {
+  const base = (() => {
+    switch (equipmentSlug) {
+      case "mancuernas":
+      case "polea":
+      case "barra-z":
+        return 2.5;
+      case "barra":
+      case "maquina":
+      case "smith":
+        return 5;
+      default:
+        return 2.5;
+    }
+  })();
+  if (nivel === "avanzado") return Math.max(1.25, base / 2);
+  return base;
 }
 
 // --------------------------- Helpers -------------------------------------
@@ -197,10 +207,14 @@ export function suggestOnTiempoCompleto(target: CurrentTarget): Suggestion {
 
 /**
  * Regla automática si el user no elige nada:
- *  - Faltó < 25 % del total → se mantiene el objetivo.
- *  - Faltó ≥ 25 %           → se baja un escalón de peso.
- *  - Tiempo completo        → +5 s.
- *  - Tiempo incompleto      → se mantiene.
+ *  - Supera el tope en TODAS las series → +peso.
+ *  - Tiempo completo → +5 s. Tiempo incompleto → mantener.
+ *  - La última serie SÍ llegó al mínimo (reps_min) → mantener. Esa es la
+ *    señal real de que la carga es apropiada aunque las primeras cayeran
+ *    por fatiga acumulada.
+ *  - La última serie quedó por debajo del mínimo (RPE 10 falló temprano)
+ *    O el conjunto deja >= 40 % de faltante → bajar un escalón de peso.
+ *  - En cualquier otro caso → mantener.
  */
 export function autoSuggestion(
   target: CurrentTarget,
@@ -215,7 +229,19 @@ export function autoSuggestion(
   }
 
   if (a.supero) return suggestOnSuperar(target);
-  if (a.faltanteRatio >= 0.25) return suggestOnNoLlegar(target).bajarPeso;
+
+  const minObjetivo = target.reps_min ?? 0;
+  const ultima = results[results.length - 1];
+  const ultimaOk =
+    ultima && (ultima.reps ?? 0) >= Math.max(1, minObjetivo);
+
+  // Si bancaste el rango hasta el final, la carga está bien aunque el resto
+  // haya ido bajando: mantener y que progrese orgánicamente.
+  if (ultimaOk) return { kind: "igual", descripcion: "Mantener el objetivo" };
+
+  // Si la última cayó clarísimo o el conjunto faltó mucho, recién bajamos.
+  if (a.faltanteRatio >= 0.4) return suggestOnNoLlegar(target).bajarPeso;
+
   return { kind: "igual", descripcion: "Mantener el objetivo" };
 }
 

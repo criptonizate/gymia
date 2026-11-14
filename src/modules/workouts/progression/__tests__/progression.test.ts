@@ -104,8 +104,8 @@ describe("suggestOnNoLlegar", () => {
 });
 
 describe("auto 25%", () => {
-  it("falta < 25% → igual", () => {
-    // 12*3 = 36. Hecho 34 → faltante 2/36 ≈ 5.5%
+  it("la última llega al mínimo → mantener", () => {
+    // Faltante total 2/36 pero última serie llegó al mínimo (reps_min=8)
     const r: SetResult[] = [
       { completada: true, reps: 12 },
       { completada: true, reps: 12 },
@@ -115,16 +115,28 @@ describe("auto 25%", () => {
     expect(s.kind).toBe("igual");
   });
 
-  it("falta >= 25% → baja un escalón de peso", () => {
-    // Hecho 24/36 → 33%
+  it("última cae por debajo del mínimo y faltante grande → bajar peso", () => {
+    // Objetivo 8-12. Última reps=4 (< min 8) y faltante total 60% → bajar.
     const r: SetResult[] = [
       { completada: true, reps: 8 },
-      { completada: true, reps: 8 },
-      { completada: true, reps: 8 },
+      { completada: true, reps: 6 },
+      { completada: true, reps: 4 },
     ];
     const s = autoSuggestion(target({ peso_objetivo_kg: 20 }), r);
     expect(s.kind).toBe("bajar_peso");
     if (s.kind === "bajar_peso") expect(s.nuevo_peso_kg).toBe(17.5);
+  });
+
+  it("última cae pero faltante moderado → mantener (no penalizar fatiga)", () => {
+    // Última=6 (< min 8) pero sólo 22% faltante total — es una mala serie
+    // suelta, el user ya está exprimido; mantener.
+    const r: SetResult[] = [
+      { completada: true, reps: 11 },
+      { completada: true, reps: 11 },
+      { completada: true, reps: 6 },
+    ];
+    const s = autoSuggestion(target(), r);
+    expect(s.kind).toBe("igual");
   });
 
   it("supera → subir", () => {

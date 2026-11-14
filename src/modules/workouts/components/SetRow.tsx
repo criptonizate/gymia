@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUnit } from "@/lib/use-unit";
+import { fromDisplay, toDisplay, KG_TO_LB } from "@/lib/units";
 
 type Props = {
   numero: number;
@@ -42,6 +44,7 @@ export function SetRow({
     initialReps ?? objetivoRepsMax ?? objetivoRepsMin ?? null,
   );
   const [done, setDone] = useState<boolean>(initialCompletada);
+  const unit = useUnit();
 
   // reset si cambian los valores iniciales (switch de ejercicio)
   useEffect(() => {
@@ -100,7 +103,7 @@ export function SetRow({
         "flex items-center gap-2 rounded-xl border p-2",
         done
           ? missed
-            ? "border-warning bg-[color-mix(in_oklab,var(--warning)_15%,var(--card))]"
+            ? "border-warning bg-[var(--warning-soft)]"
             : "border-primary bg-[var(--primary-soft)]"
           : "border-border bg-card",
       )}
@@ -111,13 +114,14 @@ export function SetRow({
 
       {tipoRegistro === "peso_reps" && (
         <Field
-          label="kg"
-          value={peso}
+          label={unit}
+          value={toDisplay(peso, unit)}
           onChange={(v) => {
-            setPeso(v);
-            commit({ peso_kg: v, reps, completada: done });
+            const kg = v == null ? null : fromDisplay(v, unit);
+            setPeso(kg);
+            commit({ peso_kg: kg, reps, completada: done });
           }}
-          step={stepKg}
+          step={unit === "lb" ? Math.round(stepKg * KG_TO_LB) : stepKg}
         />
       )}
 
@@ -133,17 +137,26 @@ export function SetRow({
 
       <button
         onClick={toggleDone}
-        aria-label={done ? "Desmarcar serie" : "Marcar serie"}
+        aria-label={
+          done
+            ? missed
+              ? `Serie ${numero} marcada: no llegaste al objetivo mínimo`
+              : `Serie ${numero} marcada: objetivo alcanzado`
+            : `Marcar serie ${numero} como completada`
+        }
         className={cn(
           "flex h-11 w-11 flex-none items-center justify-center rounded-full border",
           done
             ? missed
-              ? "border-warning bg-warning text-black"
+              ? "border-warning bg-warning text-[var(--primary-foreground)]"
               : "border-primary bg-primary text-primary-foreground"
             : "border-border bg-background text-muted-foreground",
         )}
       >
         <Check className="h-5 w-5" strokeWidth={done ? 3 : 2} />
+        {done && missed && (
+          <span className="sr-only">no llegaste al mínimo</span>
+        )}
       </button>
     </div>
   );

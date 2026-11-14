@@ -8,7 +8,7 @@ export default async function OnboardingPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-10 p-6 pt-12">
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight">Bienvenido/a</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Te damos la bienvenida</h1>
         <p className="text-sm text-muted-foreground">
           Contanos un par de cosas para armar tu rutina.
         </p>

@@ -21,14 +21,16 @@ import { BusyMachineSheet } from "@/modules/workouts/components/BusyMachineSheet
 import { PresetCountdown } from "@/modules/workouts/components/PresetCountdown";
 import { ProgressionSheet } from "@/modules/workouts/components/ProgressionSheet";
 import { readPresetCountdown } from "@/lib/preferences";
-import {
-  applyProgression,
-  finishSession,
-} from "@/modules/workouts/actions";
+import { applyProgression } from "@/modules/workouts/actions";
 import {
   logSetOffline,
   startQueueSyncOnline,
 } from "@/modules/workouts/offline-queue";
+import {
+  finishSessionOffline,
+  saveSessionCache,
+  startFinishSyncOnline,
+} from "@/modules/workouts/offline-session";
 import {
   weightStep,
   type CurrentTarget,
@@ -87,6 +89,33 @@ export function SessionView({
 
   // Arrancar sync offline al montar la vista
   useEffect(() => startQueueSyncOnline(), []);
+  useEffect(() => startFinishSyncOnline(), []);
+
+  // Guardar en IndexedDB el contexto de esta sesión (por si cae internet,
+  // podés reabrir /sesion/[id] y seguir).
+  useEffect(() => {
+    void saveSessionCache({
+      session_id: sessionId,
+      startedAt,
+      dayNombre,
+      ejercicios,
+      logs,
+      lastLogsByExercise,
+      substitutes,
+    });
+    // Pre-fetch de las imágenes del día para que estén en el cache del SW.
+    for (const e of ejercicios) {
+      for (const url of e.exercise.media_frames ?? []) {
+        if (url) {
+          const img = new window.Image();
+          img.decoding = "async";
+          img.loading = "eager";
+          img.src = url;
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
   const [holdOpen, setHoldOpen] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
@@ -260,7 +289,7 @@ export function SessionView({
   }
 
   async function onFinish(notas?: string) {
-    await finishSession(sessionId, notas);
+    await finishSessionOffline(sessionId, notas);
     router.push("/hoy");
   }
 

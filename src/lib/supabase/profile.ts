@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type Nivel = "principiante" | "intermedio" | "avanzado";
@@ -12,7 +13,9 @@ export type Profile = {
   created_at: string;
 };
 
-export async function getProfile(): Promise<Profile | null> {
+// Deduplicado por request con React.cache: múltiples llamadas en el mismo
+// render no golpean Supabase más de una vez.
+export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -24,7 +27,7 @@ export async function getProfile(): Promise<Profile | null> {
     .eq("id", user.id)
     .maybeSingle();
   return (data as Profile | null) ?? null;
-}
+});
 
 export function isProfileComplete(p: Profile | null): boolean {
   return !!(p && p.nombre && p.nivel && p.objetivo);

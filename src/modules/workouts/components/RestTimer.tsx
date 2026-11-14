@@ -33,7 +33,13 @@ export function RestTimer({ seconds, onDone, onDismiss }: Props) {
   const pct = Math.max(0, Math.min(1, remaining / Math.max(1, seconds)));
 
   return (
-    <div className="fixed inset-x-0 bottom-20 z-40 mx-auto max-w-md px-4">
+    <div
+      className="fixed inset-x-0 bottom-20 z-40 mx-auto max-w-md px-4"
+      role="timer"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-label={`Descanso: ${remaining} segundos restantes`}
+    >
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-popover/95 p-3 backdrop-blur shadow-lg">
         <div className="relative h-14 w-14 shrink-0">
           <svg viewBox="0 0 36 36" className="h-14 w-14 -rotate-90">
@@ -96,7 +102,7 @@ function IconBtn({
     <button
       onClick={onClick}
       aria-label={aria}
-      className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-foreground hover:bg-accent"
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-foreground hover:bg-accent"
     >
       {children}
     </button>

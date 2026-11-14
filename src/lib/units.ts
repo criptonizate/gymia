@@ -32,3 +32,16 @@ export function formatWeight(kg: number | null | undefined, unit: Unit): string 
   if (Number.isInteger(kg)) return `${kg} kg`;
   return `${kg.toFixed(1).replace(".", ",")} kg`;
 }
+
+export function toDisplay(kg: number | null | undefined, unit: Unit): number | null {
+  if (kg == null) return null;
+  return unit === "lb" ? Math.round(kg * KG_TO_LB * 10) / 10 : kg;
+}
+
+export function fromDisplay(val: number, unit: Unit): number {
+  return unit === "lb" ? val / KG_TO_LB : val;
+}
+
+export function unitLabel(unit: Unit): "kg" | "lb" {
+  return unit;
+}

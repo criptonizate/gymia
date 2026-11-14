@@ -1,6 +1,8 @@
 // GYMIA service worker.
 // Bump de versión para invalidar caches viejos.
-const VERSION = "gymia-v2";
+// IMPORTANTE: bumpear este número manualmente cuando cambie este archivo
+// o querés invalidar los caches. (TODO: automatizar con build hash.)
+const VERSION = "gymia-v3";
 const SHELL = [
   "/manifest.webmanifest",
   "/icon.svg",

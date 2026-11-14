@@ -62,7 +62,7 @@ const BASE: Record<Objetivo, VolumeMap> = {
   },
 };
 const NIVEL_MULT: Record<Nivel, number> = {
-  principiante: 0.75,
+  principiante: 0.85, // antes 0.75 → dejaba grupos grandes bajo MEV
   intermedio: 1,
   avanzado: 1.25,
 };
@@ -322,7 +322,7 @@ function toPlanned(
   nivel: Nivel,
   orden: number,
 ): PlannedExercise {
-  const p = prescripcion(objetivo, ex.tipo, ex.tipo_registro, nivel);
+  const p = prescripcion(objetivo, ex.tipo, ex.tipo_registro, nivel, ex.muscle_group.slug);
   return {
     orden,
     exercise_id: ex.id,

@@ -86,7 +86,7 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
       <button
         onClick={onCancel}
         aria-label="Cerrar"
-        className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card"
+        className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
       >
         <X className="h-4 w-4" />
       </button>

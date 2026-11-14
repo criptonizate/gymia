@@ -14,6 +14,7 @@ export function ExerciseCard({ ex }: { ex: ExerciseWithRelations }) {
         muscleGroupSlug={ex.muscle_group.slug}
         alt={ex.nombre}
         className="h-16 w-16 flex-none rounded-xl"
+        sizes="64px"
         minimal
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">

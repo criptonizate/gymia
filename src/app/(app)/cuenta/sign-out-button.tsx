@@ -4,13 +4,14 @@ import { useTransition } from "react";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { clearOfflineQueue } from "@/modules/workouts/offline-queue";
+import { clearAllOfflineData } from "@/modules/workouts/offline-session";
 
 export function SignOutButton() {
   const [pending, start] = useTransition();
   function onClick() {
     start(async () => {
       try {
-        await clearOfflineQueue();
+        await Promise.all([clearOfflineQueue(), clearAllOfflineData()]);
       } catch {
         /* noop */
       }

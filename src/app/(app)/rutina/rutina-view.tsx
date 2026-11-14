@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { regenerateActive } from "@/modules/routines/actions";
 import type { RoutineExerciseRow, RoutineRow } from "@/modules/routines/queries";
@@ -111,7 +111,7 @@ export function RutinaView({ routine }: Props) {
         onClick={() => setConfirmRegenOpen(true)}
         className="mt-2 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-accent"
       >
-        <Sparkles className="h-4 w-4 text-primary" />
+        <RefreshCw className="h-4 w-4 text-primary" />
         Regenerar rutina
       </button>
 

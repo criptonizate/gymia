@@ -98,7 +98,11 @@ function scoreCandidate(
 export const RuleBasedGenerator: RoutineGenerator = {
   generate(config, catalog, seed = 42): RoutinePlan {
     const rng = makeRng(seed);
-    const { templates, split } = pickSplit(config.diasPorSemana, config.nivel);
+    const { templates, split } = pickSplit(
+      config.diasPorSemana,
+      config.nivel,
+      config.objetivo,
+    );
 
     // Memoria entre semanas:
     //   usedByWeekSlot[week][dayIdx][slotIdx] = exerciseId
@@ -170,9 +174,16 @@ export const RuleBasedGenerator: RoutineGenerator = {
                 )
               : undefined;
 
-          // Para compuestos: rotar al menos cada 2 semanas (no fijar >2)
+          // Compuestos: hipertrofia/general rotan cada 2 semanas; fuerza los
+          // mantiene todo el plan (sin rotación forzada) para medir
+          // progresión linear sin cambiar el RM de comparación.
           let finalPreferredPrevWeek = preferredPrevWeek;
-          if (preferredPrevWeek && slot.kind === "compuesto" && w >= 2) {
+          if (
+            preferredPrevWeek &&
+            slot.kind === "compuesto" &&
+            w >= 2 &&
+            config.objetivo !== "fuerza"
+          ) {
             const usedTwoWeeksStraight =
               usedByWeekSlot[w - 1]?.[d]?.[s] === preferredPrevWeek &&
               usedByWeekSlot[w - 2]?.[d]?.[s] === preferredPrevWeek;
@@ -221,6 +232,7 @@ export const RuleBasedGenerator: RoutineGenerator = {
             picked_ex.tipo,
             picked_ex.tipo_registro,
             config.nivel,
+            picked_ex.muscle_group.slug,
           );
 
           picked.push({

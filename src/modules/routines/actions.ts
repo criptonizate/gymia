@@ -38,7 +38,7 @@ export async function adjustVolume(
   plan: RoutinePlan,
   target: VolumeMap,
   seed?: number,
-  entorno: "casa" | "gimnasio" = "gimnasio",
+  entorno: "casa" | "casa_sin_equipo" | "gimnasio" = "gimnasio",
 ): Promise<Result<RoutinePlan>> {
   const catalog = await listExercises();
   const adjusted = adjustPlanVolume(
@@ -70,6 +70,7 @@ export async function savePlan(plan: RoutinePlan): Promise<Result<{ routineId: s
       split: plan.split,
       nivel: plan.nivel,
       objetivo: plan.objetivo,
+      entorno: plan.entorno ?? "",
       dias: plan.dias.map((d) => ({
         semana: d.semana,
         orden: d.orden,
@@ -395,6 +396,16 @@ export async function regenerateActive(
   const preview = await previewPlan(config, seed);
   if (!preview.ok) return preview;
   return savePlan(preview.data);
+}
+
+/** Elimina la rutina activa del usuario (y su cascada). */
+export async function deleteActiveRoutine(): Promise<Result<{ borradas: number }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("delete_active_routine");
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/rutina");
+  revalidatePath("/hoy");
+  return { ok: true, data: { borradas: Number(data ?? 0) } };
 }
 
 // -------------------------------------------------------------------------

@@ -202,6 +202,6 @@ describe("RuleBasedGenerator", () => {
     expect(compPeso.series).toBe(4);
     expect(compPeso.reps_min).toBe(4);
     expect(compPeso.reps_max).toBe(6);
-    expect(compPeso.descanso_seg).toBe(210);
+    expect(compPeso.descanso_seg).toBe(150);
   });
 });

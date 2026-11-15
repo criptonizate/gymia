@@ -109,7 +109,7 @@ export async function getTodayContext(): Promise<null | {
 
   const { data: routine } = await supabase
     .from("routines")
-    .select("id, nombre, dias_por_semana, semanas, nivel, objetivo")
+    .select("id, nombre, dias_por_semana, semanas, nivel, objetivo, entorno")
     .eq("owner_id", user.id)
     .eq("activa", true)
     .maybeSingle();

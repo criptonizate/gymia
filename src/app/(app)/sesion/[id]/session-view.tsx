@@ -21,6 +21,8 @@ import { BusyMachineSheet } from "@/modules/workouts/components/BusyMachineSheet
 import { PresetCountdown } from "@/modules/workouts/components/PresetCountdown";
 import { ProgressionSheet } from "@/modules/workouts/components/ProgressionSheet";
 import { WarmupTip } from "@/modules/workouts/components/WarmupTip";
+import { Focus } from "lucide-react";
+import { FocusView } from "./focus-view";
 import { readPresetCountdown } from "@/lib/preferences";
 import { applyProgression } from "@/modules/workouts/actions";
 import {
@@ -87,6 +89,7 @@ export function SessionView({
   });
   const [rest, setRest] = useState<{ seconds: number } | null>(null);
   const [presetSecs, setPresetSecs] = useState<number | null>(null);
+  const [focusMode, setFocusMode] = useState<boolean>(false);
 
   // Arrancar sync offline al montar la vista
   useEffect(() => startQueueSyncOnline(), []);
@@ -328,14 +331,24 @@ export function SessionView({
             {i + 1} / {ejercicios.length}
           </span>
         </div>
-        <button
-          onClick={() => setBusyOpen(true)}
-          className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-medium"
-          aria-label="Máquina ocupada"
-        >
-          <Repeat className="h-3.5 w-3.5 text-primary" />
-          Ocupada
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setFocusMode(true)}
+            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-medium"
+            aria-label="Modo focus"
+          >
+            <Focus className="h-3.5 w-3.5 text-primary" />
+            Focus
+          </button>
+          <button
+            onClick={() => setBusyOpen(true)}
+            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-medium"
+            aria-label="Máquina ocupada"
+          >
+            <Repeat className="h-3.5 w-3.5 text-primary" />
+            Ocupada
+          </button>
+        </div>
       </header>
 
       {/* Media + técnica */}
@@ -537,6 +550,18 @@ export function SessionView({
           results={progressionOpen.results}
           onPick={onPickSuggestion}
           esSustituto={isSub}
+        />
+      )}
+
+      {focusMode && (
+        <FocusView
+          sessionId={sessionId}
+          ejercicios={ejercicios}
+          logs={logs}
+          lastLogsByExercise={lastLogsByExercise}
+          initialIndex={i}
+          onIndexChange={setI}
+          onExit={() => setFocusMode(false)}
         />
       )}
 

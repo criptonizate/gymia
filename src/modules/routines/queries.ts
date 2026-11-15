@@ -35,7 +35,13 @@ export type RoutineRow = {
   semanas: number;
   split: string;
   nivel: "principiante" | "intermedio" | "avanzado";
-  objetivo: "hipertrofia" | "fuerza" | "general";
+  objetivo:
+    | "hipertrofia"
+    | "fuerza"
+    | "general"
+    | "perdida_grasa"
+    | "rendimiento_deportivo";
+  entorno: "casa" | "casa_sin_equipo" | "gimnasio" | null;
   activa: boolean;
   created_at: string;
   dias: RoutineDayRow[];

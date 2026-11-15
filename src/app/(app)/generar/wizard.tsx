@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Sparkles, Check, Zap, Home, Dumbbell } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Check, Zap, Home, Dumbbell, HandMetal } from "lucide-react";
 import {
   adjustVolume,
   previewPlan,
@@ -152,7 +152,7 @@ export function GenerarWizard() {
                   <span className="text-lg font-semibold">En el gimnasio</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Barras, máquinas, poleas, mancuernas, etc.
+                  Barras, máquinas, poleas, mancuernas y bancos.
                 </span>
               </BigPick>
               <BigPick
@@ -165,10 +165,30 @@ export function GenerarWizard() {
               >
                 <span className="flex items-center gap-2">
                   <Home className="h-5 w-5 text-primary" />
-                  <span className="text-lg font-semibold">En casa</span>
+                  <span className="text-lg font-semibold">
+                    En casa con mancuernas
+                  </span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Peso corporal y mancuernas (o botellas / mochila).
+                  Peso corporal + mancuernas (o botellas / mochila) + banco.
+                </span>
+              </BigPick>
+              <BigPick
+                active={cfg.entorno === "casa_sin_equipo"}
+                onClick={() => {
+                  setCfg({ ...cfg, entorno: "casa_sin_equipo" });
+                  next();
+                }}
+                vertical
+              >
+                <span className="flex items-center gap-2">
+                  <HandMetal className="h-5 w-5 text-primary" />
+                  <span className="text-lg font-semibold">
+                    En casa sin equipo
+                  </span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Sólo peso corporal: flexiones, sentadillas, saltos.
                 </span>
               </BigPick>
             </div>

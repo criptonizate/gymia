@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, RefreshCw } from "lucide-react";
+import { MoreHorizontal, Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { regenerateActive } from "@/modules/routines/actions";
+import { deleteActiveRoutine, regenerateActive } from "@/modules/routines/actions";
 import type { RoutineExerciseRow, RoutineRow } from "@/modules/routines/queries";
 import { SwapSheet } from "./swap-sheet";
 import { AddExerciseSheet } from "./add-sheet";
@@ -27,6 +27,8 @@ export function RutinaView({ routine }: Props) {
   } | null>(null);
   const [addFor, setAddFor] = useState<string | null>(null);
   const [confirmRegenOpen, setConfirmRegenOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [pending, start] = useTransition();
 
   const diasDeSemana = routine.dias.filter((d) => d.semana === sem);
@@ -34,13 +36,24 @@ export function RutinaView({ routine }: Props) {
   function regen() {
     start(async () => {
       const res = await regenerateActive({
-        diasPorSemana: routine.dias_por_semana as 2 | 3 | 4 | 5,
+        diasPorSemana: routine.dias_por_semana as 2 | 3 | 4 | 5 | 6,
         semanas: routine.semanas as 1 | 2 | 3 | 4,
         nivel: routine.nivel,
         objetivo: routine.objetivo,
+        entorno: routine.entorno ?? undefined,
       });
       setConfirmRegenOpen(false);
       if (res.ok) router.refresh();
+    });
+  }
+
+  function eliminar() {
+    start(async () => {
+      const res = await deleteActiveRoutine();
+      if (res.ok) {
+        setConfirmDeleteOpen(false);
+        router.push("/hoy");
+      }
     });
   }
 
@@ -108,14 +121,79 @@ export function RutinaView({ routine }: Props) {
       </section>
 
       <button
-        onClick={() => setConfirmRegenOpen(true)}
+        onClick={() => setOptionsOpen(true)}
         className="mt-2 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-accent"
       >
-        <RefreshCw className="h-4 w-4 text-primary" />
-        Regenerar rutina
+        <MoreHorizontal className="h-4 w-4 text-primary" />
+        Opciones de rutina
       </button>
 
       <ImportExportButtons />
+
+      <BottomSheet
+        open={optionsOpen}
+        onClose={() => setOptionsOpen(false)}
+        title="Opciones de rutina"
+      >
+        <div className="flex flex-col gap-2 pb-2">
+          <OptionItem
+            Icon={RefreshCw}
+            label="Regenerar con la misma config"
+            hint={`${routine.dias_por_semana}d/sem · ${routine.nivel} · ${routine.objetivo}`}
+            onClick={() => {
+              setOptionsOpen(false);
+              setConfirmRegenOpen(true);
+            }}
+          />
+          <OptionItem
+            Icon={Settings}
+            label="Hacer otra rutina"
+            hint="Volvés al wizard: elegís entorno, días, objetivo, etc."
+            onClick={() => {
+              setOptionsOpen(false);
+              router.push("/generar");
+            }}
+          />
+          <OptionItem
+            Icon={Trash2}
+            label="Eliminar rutina"
+            hint="Borra la rutina actual completa. El historial se queda."
+            danger
+            onClick={() => {
+              setOptionsOpen(false);
+              setConfirmDeleteOpen(true);
+            }}
+          />
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        title="¿Eliminar la rutina?"
+      >
+        <div className="flex flex-col gap-4 pb-2">
+          <p className="text-sm text-muted-foreground">
+            Esto borra la rutina activa. El historial de sesiones queda
+            intacto. Después podés generar una nueva.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmDeleteOpen(false)}
+              className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              disabled={pending}
+              onClick={eliminar}
+              className="min-h-12 flex-1 rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground disabled:opacity-60"
+            >
+              {pending ? "Eliminando…" : "Sí, eliminar"}
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* Sheets globales */}
       {swapFor && (
@@ -170,3 +248,33 @@ export function RutinaView({ routine }: Props) {
   );
 }
 
+
+function OptionItem({
+  Icon,
+  label,
+  hint,
+  onClick,
+  danger = false,
+}: {
+  Icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  hint?: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        "flex min-h-14 items-center gap-3 rounded-xl border border-border bg-background px-4 text-left",
+        danger ? "text-destructive" : "text-foreground",
+      ].join(" ")}
+    >
+      <Icon className={`h-4 w-4 ${danger ? "text-destructive" : "text-primary"}`} />
+      <span className="flex flex-col">
+        <span className="text-sm font-semibold">{label}</span>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </span>
+    </button>
+  );
+}

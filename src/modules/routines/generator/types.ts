@@ -14,7 +14,7 @@ export type Objetivo =
   | "rendimiento_deportivo";
 export type DiasSemana = 2 | 3 | 4 | 5 | 6;
 export type Semanas = 1 | 2 | 3 | 4;
-export type Entorno = "casa" | "gimnasio";
+export type Entorno = "casa_sin_equipo" | "casa" | "gimnasio";
 
 export type GeneratorConfig = {
   diasPorSemana: DiasSemana;
@@ -24,13 +24,29 @@ export type GeneratorConfig = {
   entorno?: Entorno;
 };
 
-/** Equipos permitidos en el entorno "casa". */
+/** Equipos permitidos en "casa" (con mancuernas/banco improvisables). */
 export const CASA_EQUIPMENT: readonly string[] = [
   "peso-corporal",
   "mancuernas",
   "banco",
   "barra-z",
 ];
+
+/** Equipos permitidos en "casa_sin_equipo" (sólo cuerpo, nada más). */
+export const CASA_SIN_EQUIPO: readonly string[] = ["peso-corporal"];
+
+export function equipmentForEntorno(
+  entorno: Entorno | undefined,
+): readonly string[] | null {
+  if (entorno === "casa_sin_equipo") return CASA_SIN_EQUIPO;
+  if (entorno === "casa") return CASA_EQUIPMENT;
+  return null; // null = sin filtro
+}
+
+/** Añadir entorno al plan para persistirlo. */
+export type RoutinePlanWithEntorno = import("./types").RoutinePlan & {
+  entorno?: Entorno;
+};
 
 export type PlannedExercise = {
   orden: number;
@@ -66,6 +82,7 @@ export type RoutinePlan = {
   semanas: number;
   nivel: Nivel;
   objetivo: Objetivo;
+  entorno?: Entorno;
   dias: PlannedDay[];
 };
 

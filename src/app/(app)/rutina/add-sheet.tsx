@@ -70,6 +70,8 @@ export function AddExerciseSheet({ open, onClose, routineDayId }: Props) {
                   mediaUrl={e.media_url}
                   frames={e.media_frames}
                   muscleGroupSlug={e.muscle_group.slug}
+                  exerciseSlug={e.slug}
+                  patron={e.patron}
                   alt={e.nombre}
                   className="h-14 w-14 flex-none rounded-lg"
                   minimal

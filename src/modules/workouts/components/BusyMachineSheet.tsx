@@ -134,6 +134,8 @@ function OptionRow({
           mediaUrl={ex.media_url}
           frames={ex.media_frames}
           muscleGroupSlug={ex.muscle_group.slug}
+          exerciseSlug={ex.slug}
+          patron={ex.patron}
           alt={ex.nombre}
           className="h-16 w-16 flex-none rounded-lg"
           minimal

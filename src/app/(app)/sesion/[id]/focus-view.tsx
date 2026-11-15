@@ -183,6 +183,8 @@ export function FocusView({
           mediaUrl={ex.exercise.media_url}
           frames={ex.exercise.media_frames}
           muscleGroupSlug={ex.exercise.muscle_group.slug}
+          exerciseSlug={ex.exercise.slug}
+          patron={ex.exercise.patron}
           alt={ex.exercise.nombre}
           className="h-full w-full"
           sizes="448px"

@@ -7,6 +7,8 @@ import { TechniqueSheet } from "./TechniqueSheet";
 
 type Props = {
   nombre: string;
+  slug?: string;
+  patron?: string;
   mediaUrl: string | null;
   frames: string[];
   muscleGroupSlug: string;
@@ -17,6 +19,8 @@ type Props = {
 
 export function ExerciseHero({
   nombre,
+  slug,
+  patron,
   mediaUrl,
   frames,
   muscleGroupSlug,
@@ -37,6 +41,8 @@ export function ExerciseHero({
           mediaUrl={mediaUrl}
           frames={frames}
           muscleGroupSlug={muscleGroupSlug}
+          exerciseSlug={slug}
+          patron={patron}
           alt={nombre}
           className="aspect-square w-full"
         />

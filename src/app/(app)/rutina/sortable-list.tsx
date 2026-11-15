@@ -218,6 +218,8 @@ function SortableRow({
         mediaUrl={item.exercise.media_url}
         frames={item.exercise.media_frames}
         muscleGroupSlug={item.exercise.muscle_group.slug}
+        exerciseSlug={item.exercise.slug}
+        patron={item.exercise.patron}
         alt={item.exercise.nombre}
         className="h-12 w-12 flex-none rounded-lg"
         minimal

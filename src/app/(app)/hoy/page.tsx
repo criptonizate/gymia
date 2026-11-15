@@ -90,6 +90,8 @@ export default async function HoyPage() {
                   mediaUrl={e.exercise.media_url}
                   frames={e.exercise.media_frames}
                   muscleGroupSlug={e.exercise.muscle_group.slug}
+                  exerciseSlug={e.exercise.slug}
+                  patron={e.exercise.patron}
                   alt={e.exercise.nombre}
                   className="h-16 w-16 flex-none rounded-xl"
                   minimal

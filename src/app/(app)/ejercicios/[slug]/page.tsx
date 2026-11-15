@@ -71,6 +71,8 @@ export default async function EjercicioDetallePage({
 
       <ExerciseHero
         nombre={ex.nombre}
+        slug={ex.slug}
+        patron={ex.patron}
         mediaUrl={ex.media_url}
         frames={ex.media_frames}
         muscleGroupSlug={ex.muscle_group.slug}

@@ -3,12 +3,16 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
-import { muscleIcon } from "@/modules/exercises/muscle-icons";
+import { exerciseGlyph } from "@/modules/exercises/exercise-glyphs";
 
 type Props = {
   mediaUrl?: string | null;
   frames?: string[];
   muscleGroupSlug: string;
+  /** Slug del ejercicio para el glifo fallback. */
+  exerciseSlug?: string;
+  /** Patrón del ejercicio (para fallback por patrón). */
+  patron?: string;
   alt: string;
   className?: string;
   /** Oculta el botón play/pause (útil para miniaturas). */
@@ -23,6 +27,8 @@ export function ExerciseMedia({
   mediaUrl,
   frames,
   muscleGroupSlug,
+  exerciseSlug,
+  patron,
   alt,
   className,
   minimal = false,
@@ -57,9 +63,12 @@ export function ExerciseMedia({
     return () => clearInterval(t);
   }, [canAlternate, paused, usableFrames.length]);
 
-  const Icon = muscleIcon(muscleGroupSlug);
-
   if (!hasGif && usableFrames.length === 0) {
+    const glyph = exerciseGlyph({
+      slug: exerciseSlug ?? "",
+      patron,
+      muscleSlug: muscleGroupSlug,
+    });
     return (
       <div
         className={
@@ -68,7 +77,12 @@ export function ExerciseMedia({
         }
         aria-label={alt}
       >
-        <Icon className="h-10 w-10" />
+        <span
+          aria-hidden="true"
+          className="text-[clamp(1.75rem,8vw,3rem)] leading-none"
+        >
+          {glyph}
+        </span>
       </div>
     );
   }

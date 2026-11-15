@@ -361,6 +361,8 @@ export function SessionView({
           mediaUrl={activeExercise.media_url}
           frames={activeExercise.media_frames}
           muscleGroupSlug={activeExercise.muscle_group.slug}
+          exerciseSlug={activeExercise.slug}
+          patron={activeExercise.patron}
           alt={activeExercise.nombre}
           className="aspect-[4/3] w-full"
         />

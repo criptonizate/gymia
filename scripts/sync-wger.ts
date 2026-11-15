@@ -188,8 +188,10 @@ type WgerExerciseBase = {
   images: WgerImage[];
 };
 
-async function fetchAllWger(): Promise<Array<{ name: string; image: string }>> {
-  const out: Array<{ name: string; image: string }> = [];
+async function fetchAllWger(): Promise<
+  Array<{ name: string; images: string[] }>
+> {
+  const out: Array<{ name: string; images: string[] }> = [];
   let url: string | null =
     "https://wger.de/api/v2/exerciseinfo/?limit=100&offset=0";
   let page = 0;
@@ -200,15 +202,19 @@ async function fetchAllWger(): Promise<Array<{ name: string; image: string }>> {
     const json: { next: string | null; results: WgerExerciseBase[] } =
       await res.json();
     for (const e of json.results) {
-      const mainImg =
-        e.images?.find((i) => i.is_main)?.image ?? e.images?.[0]?.image;
-      if (!mainImg) continue;
+      const imgs = e.images ?? [];
+      if (!imgs.length) continue;
+      // Ordenar: is_main primero, resto después. Limitar a 4.
+      const sorted = [...imgs].sort((a, b) =>
+        a.is_main === b.is_main ? 0 : a.is_main ? -1 : 1,
+      );
+      const images = sorted.slice(0, 4).map((i) => i.image);
       // Sólo inglés (2) y español (4) para evitar falsos matches con
       // nombres en otros idiomas que comparten tokens cortos tipo "v" o "ab".
       for (const t of e.translations ?? []) {
         if (!t.name) continue;
         if (t.language !== 2 && t.language !== 4) continue;
-        out.push({ name: t.name, image: mainImg });
+        out.push({ name: t.name, images });
       }
     }
     url = json.next;
@@ -240,14 +246,14 @@ function score(a: string, b: string): number {
 
 function bestMatch(
   terms: string[],
-  index: Array<{ name: string; image: string }>,
-): { image: string; score: number; matched: string } | null {
-  let best: { image: string; score: number; matched: string } | null = null;
+  index: Array<{ name: string; images: string[] }>,
+): { images: string[]; score: number; matched: string } | null {
+  let best: { images: string[]; score: number; matched: string } | null = null;
   for (const t of terms) {
     for (const row of index) {
       const s = score(t, row.name);
       if (!best || s > best.score) {
-        best = { image: row.image, score: s, matched: row.name };
+        best = { images: row.images, score: s, matched: row.name };
       }
     }
   }
@@ -308,21 +314,31 @@ async function main() {
       continue;
     }
     matched++;
-    let finalUrl = m.image;
+    let finalImages: string[] = m.images.slice(0, 3);
     if (!REMOTE_ONLY && !DRY) {
-      const uploadedUrl = await copyToStorage(m.image, ex.slug);
-      if (uploadedUrl) {
-        finalUrl = uploadedUrl;
-        uploaded++;
+      const copied: string[] = [];
+      for (let idx = 0; idx < finalImages.length; idx++) {
+        const u = await copyToStorage(finalImages[idx], `${ex.slug}-${idx + 1}`);
+        if (u) copied.push(u);
+      }
+      if (copied.length) {
+        finalImages = copied;
+        uploaded += copied.length;
       }
     }
     console.log(
-      `  ✓ ${ex.slug} → "${m.matched}" (${(m.score * 100).toFixed(0)}%)`,
+      `  ✓ ${ex.slug} → "${m.matched}" (${(m.score * 100).toFixed(0)}%) · ${finalImages.length} img`,
     );
     if (!DRY) {
+      // Si hay >1 imagen: media_frames + media_url=null (la UI alterna).
+      // Si hay 1: va a media_url (más simple, sin loop).
+      const update =
+        finalImages.length > 1
+          ? { media_url: null, media_frames: finalImages }
+          : { media_url: finalImages[0], media_frames: [] as string[] };
       const { error: upErr } = await supabase
         .from("exercises")
-        .update({ media_url: finalUrl })
+        .update(update)
         .eq("id", ex.id);
       if (upErr) console.warn(`    update falló:`, upErr.message);
     }

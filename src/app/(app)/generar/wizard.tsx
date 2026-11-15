@@ -2,7 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Sparkles, Check, Zap, Home, Dumbbell, HandMetal } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  Check,
+  Zap,
+  Home,
+  Dumbbell,
+  HandMetal,
+  Flame,
+  Trophy,
+  Heart,
+  Baby,
+  Medal,
+  Rocket,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   adjustVolume,
   previewPlan,
@@ -24,48 +40,72 @@ type Config = Partial<GeneratorConfig>;
 
 const DIAS: DiasSemana[] = [2, 3, 4, 5, 6];
 const SEMANAS: Semanas[] = [1, 2, 3, 4];
-const NIVELES: { v: Nivel; l: string; desc: string }[] = [
+type Pick<V> = {
+  v: V;
+  l: string;
+  icon: LucideIcon;
+  tag: string;
+  chips: string[];
+};
+
+const NIVELES: Pick<Nivel>[] = [
   {
     v: "principiante",
     l: "Principiante",
-    desc: "Recién empezás o hay ejercicios básicos (sentadilla, peso muerto, press) que todavía no dominás con buena técnica. Si dudás, elegí este: priorizamos técnica y evitamos ejercicios complejos.",
+    icon: Baby,
+    tag: "Aprendiendo la técnica",
+    chips: ["0–6 meses", "Sin ejercicios complejos"],
   },
   {
     v: "intermedio",
     l: "Intermedio",
-    desc: "Entrenás hace 6+ meses de forma constante, hacés bien los compuestos básicos y entendés tu progresión (RIR, cargas).",
+    icon: Medal,
+    tag: "Técnica sólida en los básicos",
+    chips: ["6+ meses", "Entiendo RIR/cargas"],
   },
   {
     v: "avanzado",
     l: "Avanzado",
-    desc: "1+ año entrenando consistentemente, técnica sólida en todos los compuestos y manejás variantes exigentes (dominadas lastradas, peso muerto rumano, etc.).",
+    icon: Trophy,
+    tag: "Dominio total y variantes exigentes",
+    chips: ["1+ año", "Variantes avanzadas"],
   },
 ];
-const OBJETIVOS: { v: Objetivo; l: string; desc: string }[] = [
+const OBJETIVOS: Pick<Objetivo>[] = [
   {
     v: "hipertrofia",
     l: "Hipertrofia",
-    desc: "Ganar músculo y volumen. Series de 6–15 reps con descansos medios. Es lo típico si querés verte más marcado/a.",
+    icon: Dumbbell,
+    tag: "Ganar músculo",
+    chips: ["6–15 reps", "Descanso medio"],
   },
   {
     v: "fuerza",
     l: "Fuerza",
-    desc: "Levantar más peso. Series de 3–6 reps con descansos largos. Ideal si querés progresar en sentadilla, press, peso muerto.",
+    icon: Trophy,
+    tag: "Levantar más peso",
+    chips: ["3–6 reps", "Descanso largo"],
   },
   {
     v: "perdida_grasa",
     l: "Pérdida de grasa",
-    desc: "Más reps (10–20) y descansos cortos para mantener músculo mientras bajás grasa. Se combina bien con déficit calórico.",
+    icon: Flame,
+    tag: "Quemar grasa, mantener músculo",
+    chips: ["10–20 reps", "Descanso corto"],
   },
   {
     v: "rendimiento_deportivo",
     l: "Rendimiento deportivo",
-    desc: "Potencia y explosividad para otros deportes. Series cortas, movimientos rápidos, foco en fuerza aplicada.",
+    icon: Rocket,
+    tag: "Potencia y explosividad",
+    chips: ["Series cortas", "Movimientos rápidos"],
   },
   {
     v: "general",
-    l: "Acondicionamiento general",
-    desc: "Salud, energía y estar en forma sin un objetivo específico. Volumen moderado, variado, sostenible.",
+    l: "Acondicionamiento",
+    icon: Heart,
+    tag: "Salud y estar en forma",
+    chips: ["Variado", "Sostenible"],
   },
 ];
 
@@ -317,17 +357,17 @@ export function GenerarWizard() {
                   }}
                   vertical
                 >
-                  <span className="flex flex-col items-start gap-1 px-4 py-3 text-left">
-                    <span className="text-lg font-semibold">{n.l}</span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {n.desc}
-                    </span>
-                  </span>
+                  <PickBody
+                    icon={n.icon}
+                    title={n.l}
+                    tag={n.tag}
+                    chips={n.chips}
+                  />
                 </BigPick>
               ))}
               <p className="px-1 text-xs text-muted-foreground">
-                Tip: si hay movimientos que todavía no dominás, elegí un nivel
-                más bajo. Mejor dominar la técnica y subir después.
+                Si todavía hay movimientos que no dominás, elegí un nivel más
+                bajo.
               </p>
             </div>
           </Step>
@@ -346,12 +386,12 @@ export function GenerarWizard() {
                   }}
                   vertical
                 >
-                  <span className="flex flex-col items-start gap-1 px-4 py-3 text-left">
-                    <span className="text-lg font-semibold">{o.l}</span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {o.desc}
-                    </span>
-                  </span>
+                  <PickBody
+                    icon={o.icon}
+                    title={o.l}
+                    tag={o.tag}
+                    chips={o.chips}
+                  />
                 </BigPick>
               ))}
             </div>
@@ -559,6 +599,44 @@ function BigPick({
     >
       {children}
     </button>
+  );
+}
+
+function PickBody({
+  icon: Icon,
+  title,
+  tag,
+  chips,
+}: {
+  icon: LucideIcon;
+  title: string;
+  tag: string;
+  chips: string[];
+}) {
+  return (
+    <span className="flex w-full items-center gap-3 px-4 py-3 text-left">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-soft)] text-primary">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-base font-semibold">{title}</span>
+        </span>
+        <span className="truncate text-xs font-normal text-muted-foreground">
+          {tag}
+        </span>
+        <span className="flex flex-wrap gap-1 pt-0.5">
+          {chips.map((c) => (
+            <span
+              key={c}
+              className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              {c}
+            </span>
+          ))}
+        </span>
+      </span>
+    </span>
   );
 }
 

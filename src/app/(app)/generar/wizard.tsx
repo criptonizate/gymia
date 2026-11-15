@@ -24,10 +24,22 @@ type Config = Partial<GeneratorConfig>;
 
 const DIAS: DiasSemana[] = [2, 3, 4, 5, 6];
 const SEMANAS: Semanas[] = [1, 2, 3, 4];
-const NIVELES: { v: Nivel; l: string }[] = [
-  { v: "principiante", l: "Principiante" },
-  { v: "intermedio", l: "Intermedio" },
-  { v: "avanzado", l: "Avanzado" },
+const NIVELES: { v: Nivel; l: string; desc: string }[] = [
+  {
+    v: "principiante",
+    l: "Principiante",
+    desc: "Recién empezás o hay ejercicios básicos (sentadilla, peso muerto, press) que todavía no dominás con buena técnica. Si dudás, elegí este: priorizamos técnica y evitamos ejercicios complejos.",
+  },
+  {
+    v: "intermedio",
+    l: "Intermedio",
+    desc: "Entrenás hace 6+ meses de forma constante, hacés bien los compuestos básicos y entendés tu progresión (RIR, cargas).",
+  },
+  {
+    v: "avanzado",
+    l: "Avanzado",
+    desc: "1+ año entrenando consistentemente, técnica sólida en todos los compuestos y manejás variantes exigentes (dominadas lastradas, peso muerto rumano, etc.).",
+  },
 ];
 const OBJETIVOS: { v: Objetivo; l: string }[] = [
   { v: "hipertrofia", l: "Hipertrofia" },
@@ -285,9 +297,18 @@ export function GenerarWizard() {
                   }}
                   vertical
                 >
-                  <span className="text-lg font-semibold">{n.l}</span>
+                  <span className="flex flex-col items-start gap-1 px-4 py-3 text-left">
+                    <span className="text-lg font-semibold">{n.l}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {n.desc}
+                    </span>
+                  </span>
                 </BigPick>
               ))}
+              <p className="px-1 text-xs text-muted-foreground">
+                Tip: si hay movimientos que todavía no dominás, elegí un nivel
+                más bajo. Mejor dominar la técnica y subir después.
+              </p>
             </div>
           </Step>
         )}

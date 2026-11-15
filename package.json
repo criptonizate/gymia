@@ -15,6 +15,7 @@
     "check-media": "tsx scripts/check-media.ts",
     "upload-media": "tsx scripts/upload-media-to-storage.ts",
     "sync-wger": "tsx scripts/sync-wger.ts",
+    "sync-fed": "tsx scripts/sync-free-exercise-db.ts",
     "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > src/lib/supabase/database.types.ts"
   },
   "dependencies": {

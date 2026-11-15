@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { RuleBasedGenerator } from "../rule-based";
 import { FIXTURE_CATALOG } from "./fixture";
-import type { GeneratorConfig } from "../types";
+import type { GeneratorConfig, PlannedDay } from "../types";
 
 function run(cfg: Partial<GeneratorConfig>, seed = 42) {
   return RuleBasedGenerator.generate(
@@ -17,6 +17,14 @@ function run(cfg: Partial<GeneratorConfig>, seed = 42) {
   );
 }
 
+// Warmup = primeros 3 ejercicios, Finisher = últimos 2. Los tests de
+// invariantes de rutina sólo miran el bloque "main".
+const WARMUP = 3;
+const FINISHER = 2;
+function mainOnly(d: PlannedDay) {
+  return d.ejercicios.slice(WARMUP, d.ejercicios.length - FINISHER);
+}
+
 describe("RuleBasedGenerator", () => {
   it("es determinístico con la misma semilla", () => {
     const a = run({});
@@ -30,20 +38,21 @@ describe("RuleBasedGenerator", () => {
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
   });
 
-  it("tiene core en todos los días", () => {
+  it("tiene core en todos los días (main)", () => {
     const plan = run({});
     for (const d of plan.dias) {
-      const tieneCore = d.ejercicios.some(
+      const tieneCore = mainOnly(d).some(
         (e) => e.muscle_group_slug === "core",
       );
       expect(tieneCore, `día ${d.nombre}`).toBe(true);
     }
   });
 
-  it("el core va al final del día", () => {
+  it("el core va al final del main", () => {
     const plan = run({});
     for (const d of plan.dias) {
-      const last = d.ejercicios[d.ejercicios.length - 1];
+      const main = mainOnly(d);
+      const last = main[main.length - 1];
       expect(last.muscle_group_slug).toBe("core");
     }
   });
@@ -51,7 +60,7 @@ describe("RuleBasedGenerator", () => {
   it("tiene al menos una polea por día (sin contar el core)", () => {
     const plan = run({});
     for (const d of plan.dias) {
-      const nonCore = d.ejercicios.filter(
+      const nonCore = mainOnly(d).filter(
         (e) => e.muscle_group_slug !== "core",
       );
       const tienePolea = nonCore.some((e) => e.equipment_slug === "polea");
@@ -59,7 +68,7 @@ describe("RuleBasedGenerator", () => {
     }
   });
 
-  it("no repite el mismo ejercicio en días seguidos (dentro de la semana)", () => {
+  it("no repite el mismo ejercicio en días seguidos (main)", () => {
     const plan = run({ diasPorSemana: 4, semanas: 2 });
     const porSemana = new Map<number, typeof plan.dias>();
     for (const d of plan.dias) {
@@ -69,8 +78,8 @@ describe("RuleBasedGenerator", () => {
     }
     for (const [, dias] of porSemana) {
       for (let i = 1; i < dias.length; i++) {
-        const prev = new Set(dias[i - 1].ejercicios.map((e) => e.exercise_id));
-        for (const e of dias[i].ejercicios) {
+        const prev = new Set(mainOnly(dias[i - 1]).map((e) => e.exercise_id));
+        for (const e of mainOnly(dias[i])) {
           expect(prev.has(e.exercise_id), `repetido en días seguidos: ${e.nombre}`).toBe(false);
         }
       }
@@ -88,7 +97,7 @@ describe("RuleBasedGenerator", () => {
     const grandes = ["pecho", "espalda", "hombros", "cuadriceps", "isquios"];
     for (const [sem, dias] of porSemana) {
       const presentes = new Set(
-        dias.flatMap((d) => d.ejercicios.map((e) => e.muscle_group_slug)),
+        dias.flatMap((d) => mainOnly(d).map((e) => e.muscle_group_slug)),
       );
       for (const g of grandes) {
         expect(presentes.has(g), `semana ${sem} no cubre ${g}`).toBe(true);
@@ -102,7 +111,7 @@ describe("RuleBasedGenerator", () => {
     const porSemana = new Map<number, Record<string, number>>();
     for (const d of plan.dias) {
       const acc = porSemana.get(d.semana) ?? {};
-      for (const e of d.ejercicios) {
+      for (const e of mainOnly(d)) {
         acc[e.muscle_group_slug] = (acc[e.muscle_group_slug] ?? 0) + e.series;
       }
       porSemana.set(d.semana, acc);
@@ -126,8 +135,8 @@ describe("RuleBasedGenerator", () => {
     let accesoriosRotados = 0;
     let totalAccesorios = 0;
     for (let i = 0; i < porSemana[1].length; i++) {
-      const w1 = porSemana[1][i].ejercicios;
-      const w2 = porSemana[2][i].ejercicios;
+      const w1 = mainOnly(porSemana[1][i]);
+      const w2 = mainOnly(porSemana[2][i]);
       for (let s = 0; s < Math.min(w1.length, w2.length); s++) {
         const a = w1[s];
         const b = w2[s];
@@ -150,8 +159,8 @@ describe("RuleBasedGenerator", () => {
     let compEstables = 0;
     let totalComp = 0;
     for (let i = 0; i < porSemana[1].length; i++) {
-      const w1 = porSemana[1][i].ejercicios;
-      const w2 = porSemana[2][i].ejercicios;
+      const w1 = mainOnly(porSemana[1][i]);
+      const w2 = mainOnly(porSemana[2][i]);
       for (let s = 0; s < Math.min(w1.length, w2.length); s++) {
         if (w1[s].tipo !== "compuesto") continue;
         totalComp++;
@@ -162,11 +171,29 @@ describe("RuleBasedGenerator", () => {
     expect(compEstables / totalComp).toBeGreaterThanOrEqual(0.6);
   });
 
-  it("5 a 7 ejercicios por día", () => {
+  it("5 a 7 ejercicios por día (main)", () => {
     const plan = run({ diasPorSemana: 4 });
     for (const d of plan.dias) {
-      expect(d.ejercicios.length).toBeGreaterThanOrEqual(5);
-      expect(d.ejercicios.length).toBeLessThanOrEqual(7);
+      const main = mainOnly(d);
+      expect(main.length).toBeGreaterThanOrEqual(5);
+      expect(main.length).toBeLessThanOrEqual(7);
+    }
+  });
+
+  it("incluye warmup (3 ex × 2 series) y finisher (2 ex) de colchoneta", () => {
+    const plan = run({});
+    for (const d of plan.dias) {
+      const warmup = d.ejercicios.slice(0, 3);
+      expect(warmup, `warmup día ${d.nombre}`).toHaveLength(3);
+      for (const w of warmup) {
+        expect(w.series, `warmup ${w.nombre}`).toBe(2);
+        expect(w.muscle_group_slug).toBe("core");
+      }
+      const finisher = d.ejercicios.slice(-2);
+      expect(finisher, `finisher día ${d.nombre}`).toHaveLength(2);
+      for (const f of finisher) {
+        expect(f.muscle_group_slug).toBe("core");
+      }
     }
   });
 

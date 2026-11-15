@@ -388,31 +388,52 @@ export function GenerarWizard() {
                   <h3 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Semana {sem}
                   </h3>
-                  {dias.map((d) => (
-                    <article
-                      key={d.nombre}
-                      className="rounded-2xl border border-border bg-card p-3"
-                    >
-                      <h4 className="mb-2 text-sm font-semibold">
-                        {d.split_label}
-                      </h4>
-                      <ul className="flex flex-col gap-1">
-                        {d.ejercicios.map((e) => (
-                          <li
-                            key={e.exercise_slug + e.orden}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span className="truncate pr-2">{e.nombre}</span>
-                            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                              {e.tipo_registro === "tiempo"
-                                ? `${e.series}×${e.duracion_seg}s`
-                                : `${e.series}×${e.reps_min}-${e.reps_max}`}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </article>
-                  ))}
+                  {dias.map((d) => {
+                    const warmup = d.ejercicios.slice(0, 3);
+                    const finisher = d.ejercicios.slice(-2);
+                    const main = d.ejercicios.slice(3, d.ejercicios.length - 2);
+                    const renderRow = (e: typeof d.ejercicios[number]) => (
+                      <li
+                        key={e.exercise_slug + e.orden}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="truncate pr-2">{e.nombre}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                          {e.tipo_registro === "tiempo"
+                            ? `${e.series}×${e.duracion_seg}s`
+                            : `${e.series}×${e.reps_min}-${e.reps_max}`}
+                        </span>
+                      </li>
+                    );
+                    return (
+                      <article
+                        key={d.nombre}
+                        className="rounded-2xl border border-border bg-card p-3"
+                      >
+                        <h4 className="mb-2 text-sm font-semibold">
+                          {d.split_label}
+                        </h4>
+                        <h5 className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Entrada en calor · colchoneta
+                        </h5>
+                        <ul className="mb-2 flex flex-col gap-1">
+                          {warmup.map(renderRow)}
+                        </ul>
+                        <h5 className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Rutina
+                        </h5>
+                        <ul className="mb-2 flex flex-col gap-1">
+                          {main.map(renderRow)}
+                        </ul>
+                        <h5 className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Abdomen final · colchoneta
+                        </h5>
+                        <ul className="flex flex-col gap-1">
+                          {finisher.map(renderRow)}
+                        </ul>
+                      </article>
+                    );
+                  })}
                 </section>
               ))}
             </div>

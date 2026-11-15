@@ -41,12 +41,32 @@ const NIVELES: { v: Nivel; l: string; desc: string }[] = [
     desc: "1+ año entrenando consistentemente, técnica sólida en todos los compuestos y manejás variantes exigentes (dominadas lastradas, peso muerto rumano, etc.).",
   },
 ];
-const OBJETIVOS: { v: Objetivo; l: string }[] = [
-  { v: "hipertrofia", l: "Hipertrofia" },
-  { v: "fuerza", l: "Fuerza" },
-  { v: "perdida_grasa", l: "Pérdida de grasa" },
-  { v: "rendimiento_deportivo", l: "Rendimiento deportivo" },
-  { v: "general", l: "Acondicionamiento general" },
+const OBJETIVOS: { v: Objetivo; l: string; desc: string }[] = [
+  {
+    v: "hipertrofia",
+    l: "Hipertrofia",
+    desc: "Ganar músculo y volumen. Series de 6–15 reps con descansos medios. Es lo típico si querés verte más marcado/a.",
+  },
+  {
+    v: "fuerza",
+    l: "Fuerza",
+    desc: "Levantar más peso. Series de 3–6 reps con descansos largos. Ideal si querés progresar en sentadilla, press, peso muerto.",
+  },
+  {
+    v: "perdida_grasa",
+    l: "Pérdida de grasa",
+    desc: "Más reps (10–20) y descansos cortos para mantener músculo mientras bajás grasa. Se combina bien con déficit calórico.",
+  },
+  {
+    v: "rendimiento_deportivo",
+    l: "Rendimiento deportivo",
+    desc: "Potencia y explosividad para otros deportes. Series cortas, movimientos rápidos, foco en fuerza aplicada.",
+  },
+  {
+    v: "general",
+    l: "Acondicionamiento general",
+    desc: "Salud, energía y estar en forma sin un objetivo específico. Volumen moderado, variado, sostenible.",
+  },
 ];
 
 type Preset = {
@@ -326,7 +346,12 @@ export function GenerarWizard() {
                   }}
                   vertical
                 >
-                  <span className="text-lg font-semibold">{o.l}</span>
+                  <span className="flex flex-col items-start gap-1 px-4 py-3 text-left">
+                    <span className="text-lg font-semibold">{o.l}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {o.desc}
+                    </span>
+                  </span>
                 </BigPick>
               ))}
             </div>

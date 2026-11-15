@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        // Imágenes de wger (CC-BY-SA) para ejercicios
+        protocol: "https",
+        hostname: "wger.de",
+        pathname: "/media/**",
+      },
     ],
   },
   turbopack: {

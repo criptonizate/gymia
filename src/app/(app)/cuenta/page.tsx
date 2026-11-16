@@ -18,6 +18,7 @@ import { StalledCard } from "@/modules/progress/components/StalledCard";
 import { PresetCountdownToggle } from "@/components/preset-countdown-toggle";
 import { ExportCard } from "./export-card";
 import { GlossaryCard } from "./glossary-card";
+import { ReminderCard } from "./reminder-card";
 import {
   getBodyWeights,
   getExerciseRecords,
@@ -106,6 +107,7 @@ export default async function CuentaPage() {
           Herramientas
         </h2>
         <GlossaryCard />
+        <ReminderCard />
         <ExportCard />
       </section>
 

@@ -740,6 +740,27 @@ function SummaryOverlay({
       <div className="mt-4 flex gap-2">
         <button
           onClick={async () => {
+            const { shareSnapshot } = await import(
+              "@/modules/workouts/components/share-snapshot"
+            );
+            const hint = await shareSnapshot({
+              duracionMin: mins,
+              seriesCompletas,
+              seriesPlanificadas,
+              volumen,
+              records,
+            });
+            if (hint) {
+              setShareHint(hint);
+              setTimeout(() => setShareHint(null), 2500);
+            }
+          }}
+          className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
+        >
+          📸 Historia
+        </button>
+        <button
+          onClick={async () => {
             const hint = await shareSummary({
               duracionMin: mins,
               seriesCompletas,

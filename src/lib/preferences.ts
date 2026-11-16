@@ -19,3 +19,30 @@ export function writePresetCountdown(n: PresetCountdown): void {
     // noop
   }
 }
+
+// --------------------------------------------------------------------------
+// Descanso entre series (override global para la sesión).
+// null = usar el del ejercicio (routine_exercises.descanso_seg).
+// --------------------------------------------------------------------------
+const REST_KEY = "gymia-rest-seconds";
+
+export function readRestSeconds(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(REST_KEY);
+    if (raw == null) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.min(600, Math.round(n)) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeRestSeconds(n: number | null): void {
+  try {
+    if (n == null) localStorage.removeItem(REST_KEY);
+    else localStorage.setItem(REST_KEY, String(n));
+  } catch {
+    // noop
+  }
+}

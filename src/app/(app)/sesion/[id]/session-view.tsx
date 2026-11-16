@@ -10,6 +10,7 @@ import {
   Repeat,
   Check,
   Flag,
+  Timer,
 } from "lucide-react";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { TechniqueSheet } from "@/modules/exercises/components/TechniqueSheet";
@@ -23,7 +24,11 @@ import { ProgressionSheet } from "@/modules/workouts/components/ProgressionSheet
 import { WarmupTip } from "@/modules/workouts/components/WarmupTip";
 import { Focus } from "lucide-react";
 import { FocusView } from "./focus-view";
-import { readPresetCountdown } from "@/lib/preferences";
+import {
+  readPresetCountdown,
+  readRestSeconds,
+  writeRestSeconds,
+} from "@/lib/preferences";
 import { applyProgression } from "@/modules/workouts/actions";
 import {
   logSetOffline,
@@ -36,6 +41,7 @@ import {
 } from "@/modules/workouts/offline-session";
 import {
   autoSuggestion,
+  suggestStartingWeight,
   weightStep,
   type CurrentTarget,
   type SetResult,
@@ -110,6 +116,16 @@ export function SessionView({
   const [presetSecs, setPresetSecs] = useState<number | null>(null);
   const [focusMode, setFocusMode] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Override global del descanso entre series: null = usar el del
+  // ejercicio. Lo cargamos de localStorage al montar.
+  const [restOverride, setRestOverride] = useState<number | null>(null);
+  const [restPickerOpen, setRestPickerOpen] = useState(false);
+  useEffect(() => {
+    setRestOverride(readRestSeconds());
+  }, []);
+  function restSecondsFor(e: RoutineExerciseRow): number {
+    return restOverride ?? e.descanso_seg;
+  }
   // Primera sesión del user: mostrar un sheet explicando qué hace el modo
   // focus. Lo marcamos visto en localStorage para no repetirlo.
   const [introOpen, setIntroOpen] = useState(false);
@@ -129,6 +145,11 @@ export function SessionView({
       /* noop */
     }
     setIntroOpen(false);
+    // Primera sesión: si todavía no eligió descanso, abrimos el picker
+    // apenas cierra el intro para que lo setee con intención.
+    if (readRestSeconds() == null) {
+      setRestPickerOpen(true);
+    }
   }
 
   // Arrancar sync offline al montar la vista
@@ -282,7 +303,7 @@ export function SessionView({
 
     // Rest timer al marcar completada
     if (data.completada && activeTipoRegistro !== "tiempo") {
-      setRest({ seconds: current.descanso_seg });
+      setRest({ seconds: restSecondsFor(current) });
     }
 
     // Persistir (offline-queued si no hay conexión)
@@ -333,7 +354,7 @@ export function SessionView({
       completada: completo,
     });
     setHoldOpen(false);
-    setRest({ seconds: current.descanso_seg });
+    setRest({ seconds: restSecondsFor(current) });
   }
 
   const allDoneCurrent =
@@ -386,7 +407,7 @@ export function SessionView({
     setI(i + 1);
     // Arrancamos el descanso usando el del ejercicio actual (al que recién
     // terminamos). Si ya había un rest corriendo lo dejamos.
-    setRest((prev) => prev ?? { seconds: current.descanso_seg });
+    setRest((prev) => prev ?? { seconds: restSecondsFor(current) });
     setPresetSecs(null);
   }
 
@@ -446,6 +467,14 @@ export function SessionView({
           >
             <Focus className="h-3.5 w-3.5 text-primary" />
             <span className="hidden sm:inline">Focus</span>
+          </button>
+          <button
+            onClick={() => setRestPickerOpen(true)}
+            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-2 text-xs font-medium tabular-nums sm:px-3"
+            aria-label="Ajustar descanso entre series"
+          >
+            <Timer className="h-3.5 w-3.5 text-primary" />
+            {restSecondsFor(current)}s
           </button>
           <button
             onClick={() => setBusyOpen(true)}
@@ -557,7 +586,20 @@ export function SessionView({
                 objetivoRepsMin={current.reps_min}
                 objetivoRepsMax={current.reps_max}
                 rirObjetivo={current.rir_objetivo}
-                initialPeso={existing?.peso_kg ?? lastSet?.peso_kg ?? current.peso_objetivo_kg}
+                initialPeso={
+                  existing?.peso_kg ??
+                  lastSet?.peso_kg ??
+                  current.peso_objetivo_kg ??
+                  // Sin historial, sin objetivo: recomendamos un peso bajo
+                  // como punto de arranque. El user bumpea con ↑ y queda
+                  // registrado al tildar la serie.
+                  (activeTipoRegistro === "peso_reps"
+                    ? suggestStartingWeight({
+                        equipmentSlug: activeEquipmentSlug,
+                        tipo: activeExercise.tipo,
+                      })
+                    : null)
+                }
                 initialReps={existing?.reps ?? lastSet?.reps ?? current.reps_max ?? current.reps_min}
                 initialRir={existing?.rir ?? null}
                 initialCompletada={existing?.completada}
@@ -745,6 +787,52 @@ export function SessionView({
       )}
 
       <BottomSheet
+        open={restPickerOpen}
+        onClose={() => setRestPickerOpen(false)}
+        title="Descanso entre series"
+      >
+        <div className="flex flex-col gap-4 pb-2">
+          <p className="text-sm text-muted-foreground">
+            Elegí cuántos segundos de pausa querés entre series. Vale
+            para toda la sesión y se guarda para la próxima.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[30, 45, 60, 90, 120, 180].map((s) => {
+              const active = (restOverride ?? current.descanso_seg) === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setRestOverride(s);
+                    writeRestSeconds(s);
+                    setRestPickerOpen(false);
+                  }}
+                  className={
+                    "min-h-12 rounded-xl border text-sm font-semibold tabular-nums transition-transform duration-100 active:scale-[0.97] " +
+                    (active
+                      ? "border-primary bg-[var(--primary-soft)] text-primary"
+                      : "border-border bg-card")
+                  }
+                >
+                  {s}s
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setRestOverride(null);
+              writeRestSeconds(null);
+              setRestPickerOpen(false);
+            }}
+          >
+            Usar el del ejercicio ({current.descanso_seg}s)
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
         open={introOpen}
         onClose={dismissIntro}
         title="Bienvenido a tu primer entrenamiento"
@@ -778,6 +866,35 @@ export function SessionView({
                 <strong>Siguiente</strong> y pasás al próximo con el
                 descanso corriendo. La progresión (más peso, más reps)
                 se aplica sola — podés ajustarla después si querés.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[var(--primary-soft)] text-primary">
+              <Timer className="h-5 w-5" />
+            </span>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold">Elegí tu descanso</h3>
+              <p className="text-xs text-muted-foreground">
+                Después de este sheet te dejamos elegir cuántos segundos
+                querés entre series. Vale para toda la sesión y se guarda
+                para la próxima. También podés cambiarlo desde el botón{" "}
+                <strong>⏱</strong> del header.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[var(--primary-soft)] text-primary">
+              <span className="text-lg font-bold">kg</span>
+            </span>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold">Peso de arranque</h3>
+              <p className="text-xs text-muted-foreground">
+                Si es la primera vez que hacés un ejercicio, te sugerimos
+                un peso <strong>bajo</strong> como punto de partida. Subilo
+                con la flecha ↑ hasta donde te sientas cómodo; queda
+                registrado al tildar la serie y la próxima vez arranca de
+                ahí.
               </p>
             </div>
           </div>

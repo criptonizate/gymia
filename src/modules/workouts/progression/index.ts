@@ -85,6 +85,52 @@ export function weightStep(
   return base;
 }
 
+/**
+ * Peso inicial sugerido para un ejercicio sin historial ni peso objetivo.
+ *
+ * La recomendación es DELIBERADAMENTE conservadora: mejor empezar bajo y
+ * subir en las próximas series/sesiones que lesionarse con una carga alta
+ * mal seteada. El user puede bumpear con ↑ y el valor queda registrado al
+ * tildar la serie, así la próxima sesión lo toma como lastLog.
+ */
+export function suggestStartingWeight(args: {
+  equipmentSlug: string;
+  tipo: "compuesto" | "aislamiento";
+  nivel?: "principiante" | "intermedio" | "avanzado";
+}): number {
+  const { equipmentSlug, tipo, nivel } = args;
+  // Peso corporal y bandas: no hay carga a seleccionar.
+  if (equipmentSlug === "peso-corporal" || equipmentSlug === "banda") {
+    return 0;
+  }
+  // Base por equipo (conservadora, compuesto). Para aislamiento bajamos.
+  const base = (() => {
+    switch (equipmentSlug) {
+      case "barra":
+        return 20; // sólo la barra olímpica
+      case "barra-z":
+        return 10;
+      case "smith":
+        return 15;
+      case "mancuernas":
+        return tipo === "compuesto" ? 8 : 4;
+      case "polea":
+        return tipo === "compuesto" ? 15 : 7.5;
+      case "maquina":
+        return tipo === "compuesto" ? 20 : 10;
+      case "kettlebell":
+        return 8;
+      default:
+        return tipo === "compuesto" ? 10 : 5;
+    }
+  })();
+  // Principiantes: todavía más conservador (-25 %).
+  if (nivel === "principiante") {
+    return Math.max(0, Math.round((base * 0.75) * 2) / 2);
+  }
+  return base;
+}
+
 // --------------------------- Helpers -------------------------------------
 
 function round(n: number, step: number): number {

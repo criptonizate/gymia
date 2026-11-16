@@ -8,7 +8,6 @@ export async function saveOnboarding(formData: FormData) {
   const parsed = OnboardingInput.safeParse({
     nombre: formData.get("nombre"),
     nivel: formData.get("nivel"),
-    objetivo: formData.get("objetivo"),
   });
   if (!parsed.success) return;
 

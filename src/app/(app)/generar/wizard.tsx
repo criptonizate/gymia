@@ -14,8 +14,6 @@ import {
   Flame,
   Trophy,
   Heart,
-  Baby,
-  Medal,
   Rocket,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -48,29 +46,6 @@ type Pick<V> = {
   chips: string[];
 };
 
-const NIVELES: Pick<Nivel>[] = [
-  {
-    v: "principiante",
-    l: "Principiante",
-    icon: Baby,
-    tag: "Aprendiendo la técnica",
-    chips: ["0–6 meses", "Sin ejercicios complejos"],
-  },
-  {
-    v: "intermedio",
-    l: "Intermedio",
-    icon: Medal,
-    tag: "Técnica sólida en los básicos",
-    chips: ["6+ meses", "Entiendo RIR/cargas"],
-  },
-  {
-    v: "avanzado",
-    l: "Avanzado",
-    icon: Trophy,
-    tag: "Dominio total y variantes exigentes",
-    chips: ["1+ año", "Variantes avanzadas"],
-  },
-];
 const OBJETIVOS: Pick<Objetivo>[] = [
   {
     v: "hipertrofia",
@@ -148,12 +123,17 @@ const PRESETS: Preset[] = [
   },
 ];
 
-export function GenerarWizard() {
+export function GenerarWizard({
+  nivelInicial,
+}: {
+  nivelInicial: Nivel;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [cfg, setCfg] = useState<Config>({
     objetivo: "hipertrofia",
     entorno: "gimnasio",
+    nivel: nivelInicial,
   });
   const [plan, setPlan] = useState<RoutinePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -163,7 +143,7 @@ export function GenerarWizard() {
     cfg.entorno && cfg.diasPorSemana && cfg.semanas && cfg.nivel && cfg.objetivo;
 
   function next() {
-    setStep((s) => Math.min(s + 1, 5));
+    setStep((s) => Math.min(s + 1, 4));
   }
   function prev() {
     if (step === 0) router.back();
@@ -178,7 +158,7 @@ export function GenerarWizard() {
       if (!res.ok) setError(res.error);
       else {
         setPlan(res.data);
-        setStep(5);
+        setStep(4);
       }
     });
   }
@@ -286,7 +266,7 @@ export function GenerarWizard() {
                           if (!res.ok) setError(res.error);
                           else {
                             setPlan(res.data);
-                            setStep(5);
+                            setStep(4);
                           }
                         });
                       }}
@@ -345,45 +325,13 @@ export function GenerarWizard() {
         )}
 
         {step === 3 && (
-          <Step title="¿Cuál es tu nivel?">
-            <div className="flex flex-col gap-3">
-              {NIVELES.map((n) => (
-                <BigPick
-                  key={n.v}
-                  active={cfg.nivel === n.v}
-                  onClick={() => {
-                    setCfg({ ...cfg, nivel: n.v });
-                    next();
-                  }}
-                  vertical
-                >
-                  <PickBody
-                    icon={n.icon}
-                    title={n.l}
-                    tag={n.tag}
-                    chips={n.chips}
-                  />
-                </BigPick>
-              ))}
-              <p className="px-1 text-xs text-muted-foreground">
-                Si todavía hay movimientos que no dominás, elegí un nivel más
-                bajo.
-              </p>
-            </div>
-          </Step>
-        )}
-
-        {step === 4 && (
           <Step title="¿Cuál es tu objetivo?">
             <div className="flex flex-col gap-3">
               {OBJETIVOS.map((o) => (
                 <BigPick
                   key={o.v}
                   active={cfg.objetivo === o.v}
-                  onClick={() => {
-                    setCfg({ ...cfg, objetivo: o.v });
-                    generatePreview();
-                  }}
+                  onClick={() => setCfg({ ...cfg, objetivo: o.v })}
                   vertical
                 >
                   <PickBody
@@ -394,11 +342,14 @@ export function GenerarWizard() {
                   />
                 </BigPick>
               ))}
+              <p className="px-1 text-xs text-muted-foreground">
+                Elegí uno y confirmá para generar la rutina.
+              </p>
             </div>
           </Step>
         )}
 
-        {step === 5 && plan && (
+        {step === 4 && plan && (
           <div className="flex flex-col gap-4">
             <header className="flex flex-col gap-1">
               <h2 className="text-lg font-semibold">Previsualización</h2>
@@ -502,7 +453,7 @@ export function GenerarWizard() {
         )}
       </div>
 
-      {step < 5 && (
+      {step < 4 && (
         <div className="sticky bottom-20 flex items-center justify-between gap-2 border-t border-border bg-background px-4 py-3">
           <button
             onClick={prev}
@@ -514,7 +465,7 @@ export function GenerarWizard() {
           {pending && (
             <span className="text-xs text-muted-foreground">Generando…</span>
           )}
-          {step < 4 && (
+          {step < 3 && (
             <button
               onClick={next}
               disabled={!currentStepValue(step, cfg)}
@@ -522,6 +473,16 @@ export function GenerarWizard() {
             >
               Siguiente
               <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+          {step === 3 && (
+            <button
+              onClick={generatePreview}
+              disabled={!cfg.objetivo || pending}
+              className="flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+            >
+              <Check className="h-4 w-4" />
+              Confirmar y generar
             </button>
           )}
         </div>
@@ -534,25 +495,24 @@ function currentStepValue(step: number, cfg: Config): unknown {
   if (step === 0) return cfg.entorno;
   if (step === 1) return cfg.diasPorSemana;
   if (step === 2) return cfg.semanas;
-  if (step === 3) return cfg.nivel;
-  if (step === 4) return cfg.objetivo;
+  if (step === 3) return cfg.objetivo;
   return true;
 }
 
 function StepHeader({ step }: { step: number }) {
-  const titles = ["Entorno", "Días", "Semanas", "Nivel", "Objetivo", "Preview"];
+  const titles = ["Entorno", "Días", "Semanas", "Objetivo", "Preview"];
   return (
     <header className="flex flex-col gap-3 px-4 pb-4 pt-4">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          Paso {Math.min(step + 1, 6)} de 6
+          Paso {Math.min(step + 1, 5)} de 5
         </span>
         <span>{titles[step]}</span>
       </div>
       <div className="h-1 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${((step + 1) / 6) * 100}%` }}
+          style={{ width: `${((step + 1) / 5) * 100}%` }}
         />
       </div>
     </header>

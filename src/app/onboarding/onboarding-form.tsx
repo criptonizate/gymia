@@ -1,27 +1,48 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Baby, Medal, Trophy } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { saveOnboarding } from "./actions";
 
-const NIVELES = [
-  { value: "principiante", label: "Principiante" },
-  { value: "intermedio", label: "Intermedio" },
-  { value: "avanzado", label: "Avanzado" },
-] as const;
+type NivelPick = {
+  v: "principiante" | "intermedio" | "avanzado";
+  l: string;
+  icon: LucideIcon;
+  tag: string;
+  chips: string[];
+};
 
-const OBJETIVOS = [
-  { value: "hipertrofia", label: "Hipertrofia" },
-  { value: "fuerza", label: "Fuerza" },
-  { value: "general", label: "General" },
-] as const;
+const NIVELES: NivelPick[] = [
+  {
+    v: "principiante",
+    l: "Principiante",
+    icon: Baby,
+    tag: "Aprendiendo la técnica",
+    chips: ["0–6 meses", "Sin ejercicios complejos"],
+  },
+  {
+    v: "intermedio",
+    l: "Intermedio",
+    icon: Medal,
+    tag: "Técnica sólida en los básicos",
+    chips: ["6+ meses", "Entiendo RIR/cargas"],
+  },
+  {
+    v: "avanzado",
+    l: "Avanzado",
+    icon: Trophy,
+    tag: "Dominio total y variantes exigentes",
+    chips: ["1+ año", "Variantes avanzadas"],
+  },
+];
 
 export function OnboardingForm({ nombreInicial }: { nombreInicial: string }) {
   const [nombre, setNombre] = useState(nombreInicial);
   const [nivel, setNivel] = useState<string>("");
-  const [objetivo, setObjetivo] = useState<string>("");
   const [pending, start] = useTransition();
 
-  const puedeEnviar = nombre.trim() && nivel && objetivo;
+  const puedeEnviar = nombre.trim() && nivel;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,33 +67,51 @@ export function OnboardingForm({ nombreInicial }: { nombreInicial: string }) {
       <section className="flex flex-col gap-3">
         <h2 className="text-sm text-muted-foreground">Tu nivel</h2>
         <input type="hidden" name="nivel" value={nivel} />
-        <div className="grid grid-cols-3 gap-2">
-          {NIVELES.map((n) => (
-            <Chip
-              key={n.value}
-              active={nivel === n.value}
-              onClick={() => setNivel(n.value)}
-            >
-              {n.label}
-            </Chip>
-          ))}
+        <div className="flex flex-col gap-3">
+          {NIVELES.map((n) => {
+            const active = nivel === n.v;
+            const Icon = n.icon;
+            return (
+              <button
+                key={n.v}
+                type="button"
+                onClick={() => setNivel(n.v)}
+                className={[
+                  "flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition",
+                  active
+                    ? "border-primary bg-[var(--primary-soft)] text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/50",
+                ].join(" ")}
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-soft)] text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="truncate text-base font-semibold">
+                    {n.l}
+                  </span>
+                  <span className="truncate text-xs font-normal text-muted-foreground">
+                    {n.tag}
+                  </span>
+                  <span className="flex flex-wrap gap-1 pt-0.5">
+                    {n.chips.map((c) => (
+                      <span
+                        key={c}
+                        className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm text-muted-foreground">Tu objetivo</h2>
-        <input type="hidden" name="objetivo" value={objetivo} />
-        <div className="grid grid-cols-3 gap-2">
-          {OBJETIVOS.map((o) => (
-            <Chip
-              key={o.value}
-              active={objetivo === o.value}
-              onClick={() => setObjetivo(o.value)}
-            >
-              {o.label}
-            </Chip>
-          ))}
-        </div>
+        <p className="px-1 text-xs text-muted-foreground">
+          Si todavía hay movimientos que no dominás, elegí un nivel más bajo.
+          Podés cambiarlo luego desde &quot;Mi cuenta&quot;.
+        </p>
       </section>
 
       <button
@@ -83,30 +122,5 @@ export function OnboardingForm({ nombreInicial }: { nombreInicial: string }) {
         {pending ? "Guardando..." : "Empezar"}
       </button>
     </form>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "min-h-12 rounded-xl border px-3 text-sm font-medium transition",
-        active
-          ? "border-primary bg-[var(--primary-soft)] text-primary"
-          : "border-border bg-card text-foreground hover:border-primary/50",
-      ].join(" ")}
-    >
-      {children}
-    </button>
   );
 }

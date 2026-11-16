@@ -1,8 +1,10 @@
 import { GenerarWizard } from "./wizard";
+import { getProfile } from "@/lib/supabase/profile";
 
 export const instant = false;
 
-export default function GenerarPage() {
+export default async function GenerarPage() {
+  const profile = await getProfile();
   return (
     <main className="flex flex-col">
       <header className="px-6 pt-4">
@@ -11,7 +13,7 @@ export default function GenerarPage() {
           Armamos tu plan en 4 toques.
         </p>
       </header>
-      <GenerarWizard />
+      <GenerarWizard nivelInicial={profile?.nivel ?? "intermedio"} />
     </main>
   );
 }

@@ -80,7 +80,8 @@ export function FocusView({
         .filter((l) => l.routine_exercise_id === ejercicios[i]?.id)
         .sort((a, b) => a.numero_serie - b.numero_serie),
     );
-    setRest(null);
+    // No reseteamos `rest`: el user puede querer ir viendo el próximo
+    // ejercicio mientras el timer sigue corriendo.
     // Nuevo ejercicio: recalcular defaults
     const nextEx = ejercicios[i];
     if (!nextEx) return;
@@ -192,23 +193,35 @@ export function FocusView({
         />
       </div>
 
-      {/* Zona central grande: peso + reps o descanso */}
-      {rest != null ? (
-        <section className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
-          <span className="text-sm uppercase tracking-wider text-muted-foreground">
-            Descansá
-          </span>
-          <span className="text-[150px] font-black leading-none tabular-nums text-primary">
-            {rest}
-          </span>
-          <div className="flex gap-3">
-            <BigBtn onClick={() => setRest((r) => (r ?? 0) + 15)}>
-              +15 s
-            </BigBtn>
-            <BigBtn onClick={() => setRest(null)}>Saltar</BigBtn>
+      {/* Banner de descanso: se queda arriba mientras el user navega
+          entre ejercicios para ver qué viene después. */}
+      {rest != null && (
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[var(--primary-soft)] px-3 py-2">
+          <div className="flex min-w-0 flex-1 flex-col leading-none">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Descansá
+            </span>
+            <span className="text-3xl font-black tabular-nums text-primary">
+              {rest}s
+            </span>
           </div>
-        </section>
-      ) : terminado ? (
+          <button
+            onClick={() => setRest((r) => (r ?? 0) + 15)}
+            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
+          >
+            +15 s
+          </button>
+          <button
+            onClick={() => setRest(null)}
+            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
+          >
+            Saltar
+          </button>
+        </div>
+      )}
+
+      {/* Zona central grande: peso + reps */}
+      {terminado ? (
         <section className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
           <Check className="h-20 w-20 text-primary" />
           <span className="text-xl font-bold">

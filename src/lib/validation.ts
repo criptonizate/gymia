@@ -70,7 +70,6 @@ export const SignUpInput = z.object({
 export const OnboardingInput = z.object({
   nombre: z.string().trim().min(1).max(80),
   nivel: Nivel,
-  objetivo: Objetivo,
 });
 
 export const LogSetInput = z.object({

@@ -44,7 +44,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
 });
 
 export function isProfileComplete(p: Profile | null): boolean {
-  return !!(p && p.nombre && p.nivel && p.objetivo);
+  return !!(p && p.nombre && p.nivel);
 }
 
 export async function isAdmin(): Promise<boolean> {

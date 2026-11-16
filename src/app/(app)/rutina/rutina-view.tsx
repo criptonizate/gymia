@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { Button } from "@/components/button";
 import { deleteActiveRoutine, regenerateActive } from "@/modules/routines/actions";
 import type { RoutineExerciseRow, RoutineRow } from "@/modules/routines/queries";
 import { SwapSheet } from "./swap-sheet";
@@ -178,19 +179,23 @@ export function RutinaView({ routine }: Props) {
             intacto. Después podés generar una nueva.
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              fullWidth
               onClick={() => setConfirmDeleteOpen(false)}
-              className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
+              disabled={pending}
             >
               Cancelar
-            </button>
-            <button
-              disabled={pending}
+            </Button>
+            <Button
+              variant="destructive"
+              fullWidth
+              loading={pending}
+              loadingText="Eliminando…"
               onClick={eliminar}
-              className="min-h-12 flex-1 rounded-xl bg-destructive text-sm font-semibold text-destructive-foreground disabled:opacity-60"
             >
-              {pending ? "Eliminando…" : "Sí, eliminar"}
-            </button>
+              Sí, eliminar
+            </Button>
           </div>
         </div>
       </BottomSheet>
@@ -228,19 +233,23 @@ export function RutinaView({ routine }: Props) {
             cambios manuales</strong> de ejercicios.
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              fullWidth
               onClick={() => setConfirmRegenOpen(false)}
-              className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
+              disabled={pending}
             >
               Cancelar
-            </button>
-            <button
-              disabled={pending}
+            </Button>
+            <Button
+              variant="primary"
+              fullWidth
+              loading={pending}
+              loadingText="Generando…"
               onClick={regen}
-              className="min-h-12 flex-1 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
             >
-              {pending ? "Generando…" : "Sí, regenerar"}
-            </button>
+              Sí, regenerar
+            </Button>
           </div>
         </div>
       </BottomSheet>

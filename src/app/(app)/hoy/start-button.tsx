@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Play } from "lucide-react";
+import { Button } from "@/components/button";
 import { startOrContinueSession } from "@/modules/workouts/actions";
 
 export function StartButton({
@@ -27,13 +28,15 @@ export function StartButton({
   }
 
   return (
-    <button
+    <Button
+      size="lg"
       onClick={onClick}
-      disabled={pending}
-      className="sticky bottom-20 z-10 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground shadow-lg hover:bg-[var(--primary-strong)] disabled:opacity-60"
+      loading={pending}
+      loadingText={openSessionId ? "Abriendo…" : "Iniciando…"}
+      className="sticky bottom-20 z-10 shadow-lg"
     >
-      <Play className="h-5 w-5 fill-primary-foreground" />
+      {!pending && <Play className="h-5 w-5 fill-primary-foreground" />}
       {openSessionId ? "Continuar entrenamiento" : "Empezar entrenamiento"}
-    </button>
+    </Button>
   );
 }

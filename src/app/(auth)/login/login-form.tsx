@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Button } from "@/components/button";
 import {
   signInWithEmail,
   signUpWithEmail,
@@ -70,17 +71,15 @@ export function LoginForm({ next }: { next: string }) {
           <p className="text-sm text-destructive">{state.error}</p>
         )}
 
-        <button
+        <Button
           type="submit"
-          disabled={pending}
-          className="mt-2 flex min-h-12 w-full items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+          fullWidth
+          loading={pending}
+          loadingText="Un momento..."
+          className="mt-2"
         >
-          {pending
-            ? "Un momento..."
-            : mode === "signin"
-              ? "Entrar"
-              : "Crear cuenta"}
-        </button>
+          {mode === "signin" ? "Entrar" : "Crear cuenta"}
+        </Button>
       </form>
 
       <button

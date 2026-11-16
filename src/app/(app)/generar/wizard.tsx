@@ -17,6 +17,7 @@ import {
   Rocket,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Button } from "@/components/button";
 import {
   adjustVolume,
   previewPlan,
@@ -450,22 +451,23 @@ export function GenerarWizard({
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             <div className="sticky bottom-20 mt-2 flex flex-col gap-2 bg-background py-2">
-              <button
+              <Button
+                size="lg"
                 onClick={confirmSave}
-                disabled={pending}
-                className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+                loading={pending}
+                loadingText="Guardando..."
               >
-                <Check className="h-5 w-5" />
-                {pending ? "Guardando..." : "Guardar y empezar"}
-              </button>
-              <button
+                {!pending && <Check className="h-5 w-5" />}
+                Guardar y empezar
+              </Button>
+              <Button
+                variant="outline"
                 onClick={regeneratePreview}
                 disabled={pending}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-accent disabled:opacity-60"
               >
                 <Sparkles className="h-4 w-4 text-primary" />
                 Volver a generar
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -473,35 +475,29 @@ export function GenerarWizard({
 
       {step < 4 && (
         <div className="sticky bottom-20 flex items-center justify-between gap-2 border-t border-border bg-background px-4 py-3">
-          <button
-            onClick={prev}
-            className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-medium hover:bg-accent"
-          >
+          <Button variant="outline" onClick={prev} disabled={pending}>
             <ArrowLeft className="h-4 w-4" />
             {step === 0 ? "Volver" : "Atrás"}
-          </button>
-          {pending && (
-            <span className="text-xs text-muted-foreground">Generando…</span>
-          )}
+          </Button>
           {step < 3 && (
-            <button
+            <Button
               onClick={next}
               disabled={!currentStepValue(step, cfg)}
-              className="flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
             >
               Siguiente
               <ArrowRight className="h-4 w-4" />
-            </button>
+            </Button>
           )}
           {step === 3 && (
-            <button
+            <Button
               onClick={generatePreview}
-              disabled={!cfg.objetivo || pending}
-              className="flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+              disabled={!cfg.objetivo}
+              loading={pending}
+              loadingText="Generando…"
             >
-              <Check className="h-4 w-4" />
+              {!pending && <Check className="h-4 w-4" />}
               Confirmar y generar
-            </button>
+            </Button>
           )}
         </div>
       )}

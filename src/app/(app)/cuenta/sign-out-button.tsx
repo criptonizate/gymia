@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { LogOut } from "lucide-react";
+import { Button } from "@/components/button";
 import { signOut } from "@/lib/auth/actions";
 import { clearOfflineQueue } from "@/modules/workouts/offline-queue";
 import { clearAllOfflineData } from "@/modules/workouts/offline-session";
@@ -19,13 +20,16 @@ export function SignOutButton() {
     });
   }
   return (
-    <button
+    <Button
+      variant="outline"
+      fullWidth
       onClick={onClick}
-      disabled={pending}
-      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-medium text-destructive hover:bg-accent disabled:opacity-60"
+      loading={pending}
+      loadingText="Cerrando…"
+      className="text-destructive"
     >
-      <LogOut className="h-4 w-4" />
-      {pending ? "Cerrando…" : "Cerrar sesión"}
-    </button>
+      {!pending && <LogOut className="h-4 w-4" />}
+      Cerrar sesión
+    </Button>
   );
 }

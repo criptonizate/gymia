@@ -149,12 +149,28 @@ export async function drainQueue(): Promise<void> {
   return drainingPromise;
 }
 
-export async function logSetOffline(payload: LogSetInput): Promise<{ ok: true }> {
+export type LogSetOfflineResult =
+  | { ok: true; queued: boolean }
+  | { ok: false; error: string };
+
+export async function logSetOffline(
+  payload: LogSetInput,
+): Promise<LogSetOfflineResult> {
   const uid = (await currentUserId()) ?? "anon";
-  if (typeof window !== "undefined" && navigator.onLine) {
+  const online = typeof window !== "undefined" && navigator.onLine;
+
+  if (online) {
     const r = await logSet(payload);
-    if (r.ok) return { ok: true };
+    if (r.ok) return { ok: true, queued: false };
+    // Si el error es claramente de red (TypeError de fetch), encolamos.
+    // Si es un error de validación / RLS / FK, lo propagamos para que la UI
+    // lo muestre en vez de "guardar" en silencio una cola que luego también
+    // va a fallar.
+    const msg = r.error ?? "No se pudo guardar la serie.";
+    const esRed = /network|fetch|load failed|timeout/i.test(msg);
+    if (!esRed) return { ok: false, error: msg };
   }
+
   const entry: Entry = {
     id: `${payload.sessionId}:${payload.routineExerciseId}:${payload.numeroSerie}:${Date.now()}`,
     user_id: uid,
@@ -164,10 +180,12 @@ export async function logSetOffline(payload: LogSetInput): Promise<{ ok: true }>
   };
   try {
     await enqueue(entry);
+    return { ok: true, queued: true };
   } catch {
-    await logSet(payload);
+    const r = await logSet(payload);
+    if (r.ok) return { ok: true, queued: false };
+    return { ok: false, error: r.error ?? "No se pudo guardar la serie." };
   }
-  return { ok: true };
 }
 
 export function startQueueSyncOnline(): () => void {

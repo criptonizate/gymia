@@ -199,7 +199,7 @@ export async function listSubstitutes(
   excludeExerciseId: string,
 ) {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("exercises")
     .select(
       `id, nombre, slug, media_frames, media_url, patron, tipo, tipo_registro,
@@ -212,6 +212,7 @@ export async function listSubstitutes(
     .neq("equipment.slug", excludeEquipmentSlug)
     .neq("id", excludeExerciseId)
     .order("nombre");
+  if (error) throw new Error(error.message);
   return (data ?? []) as unknown as import("@/modules/exercises/types").ExerciseWithRelations[];
 }
 

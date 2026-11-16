@@ -89,6 +89,7 @@ export function SessionView({
   const [rest, setRest] = useState<{ seconds: number } | null>(null);
   const [presetSecs, setPresetSecs] = useState<number | null>(null);
   const [focusMode, setFocusMode] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Arrancar sync offline al montar la vista
   useEffect(() => startQueueSyncOnline(), []);
@@ -227,7 +228,7 @@ export function SessionView({
     }
 
     // Persistir (offline-queued si no hay conexión)
-    await logSetOffline({
+    const res = await logSetOffline({
       sessionId,
       routineExerciseId: current.id,
       exerciseId: activeExerciseId,
@@ -242,6 +243,8 @@ export function SessionView({
       rir: data.rir ?? null,
       completada: data.completada,
     });
+    if (!res.ok) setSaveError(res.error);
+    else setSaveError(null);
   }
 
   function onHoldComplete(segs: number, completo: boolean) {
@@ -399,6 +402,21 @@ export function SessionView({
         <section className="px-4 pt-2">
           <WarmupTip primerEjercicio={activeExercise.nombre} />
         </section>
+      )}
+
+      {saveError && (
+        <div className="mx-4 flex items-start justify-between gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <span className="min-w-0 flex-1">
+            No pude guardar la serie: {saveError}
+          </span>
+          <button
+            onClick={() => setSaveError(null)}
+            aria-label="Cerrar aviso"
+            className="rounded-full p-1 text-destructive hover:bg-destructive/10"
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {/* Series */}

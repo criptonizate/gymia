@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Minus, Plus, Sliders } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Sliders } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnit } from "@/lib/use-unit";
 import { fromDisplay, toDisplay, KG_TO_LB } from "@/lib/units";
@@ -260,15 +260,8 @@ function Field({
     onChange(next);
   }
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-1">
-      <button
-        onClick={() => bump(-step)}
-        aria-label={`Menos ${step} ${label}`}
-        className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
-      >
-        <Minus className="h-4 w-4" />
-      </button>
-      <label className="flex min-w-0 flex-1 flex-col text-center">
+    <div className="flex min-w-0 flex-1 items-stretch gap-2 rounded-xl border border-border bg-background px-2 py-1">
+      <label className="flex min-w-0 flex-1 flex-col items-center justify-center text-center">
         <input
           type="number"
           inputMode="decimal"
@@ -282,20 +275,31 @@ function Field({
             onChange(Number.isFinite(n) ? n : null);
           }}
           onBlur={() => setDraft(null)}
-          className="w-full bg-transparent text-center text-base font-bold tabular-nums outline-none sm:text-lg"
+          className="w-full bg-transparent text-center text-xl font-bold tabular-nums outline-none"
           placeholder="—"
         />
         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
           {label}
         </span>
       </label>
-      <button
-        onClick={() => bump(step)}
-        aria-label={`Más ${step} ${label}`}
-        className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
+      <div className="flex flex-none flex-col">
+        <button
+          type="button"
+          onClick={() => bump(step)}
+          aria-label={`Más ${step} ${label}`}
+          className="flex h-6 w-9 items-center justify-center rounded-md text-muted-foreground transition-transform duration-100 active:scale-90 hover:text-foreground motion-reduce:active:scale-100"
+        >
+          <ChevronUp className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => bump(-step)}
+          aria-label={`Menos ${step} ${label}`}
+          className="flex h-6 w-9 items-center justify-center rounded-md text-muted-foreground transition-transform duration-100 active:scale-90 hover:text-foreground motion-reduce:active:scale-100"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }

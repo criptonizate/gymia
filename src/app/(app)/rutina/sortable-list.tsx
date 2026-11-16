@@ -53,6 +53,7 @@ export function SortableExerciseList({
   const router = useRouter();
   const [items, setItems] = useState(ejercicios);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const sensors = useSensors(
@@ -89,9 +90,17 @@ export function SortableExerciseList({
 
   function doDelete(id: string) {
     setMenuFor(null);
+    setActionError(null);
+    const prev = items;
     setItems((p) => p.filter((x) => x.id !== id));
     start(async () => {
-      await removeExercise(id);
+      const res = await removeExercise(id);
+      if (!res.ok) {
+        // Revertir el optimistic.
+        setItems(prev);
+        setActionError(res.error);
+        return;
+      }
       await cleanupOrphanSupersets(routineDayId);
       router.refresh();
     });
@@ -125,6 +134,18 @@ export function SortableExerciseList({
       collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
     >
+      {actionError && (
+        <div className="mb-2 flex items-start justify-between gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <span className="min-w-0 flex-1">{actionError}</span>
+          <button
+            onClick={() => setActionError(null)}
+            aria-label="Cerrar aviso"
+            className="rounded-full px-1 text-destructive"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <SortableContext
         items={items.map((x) => x.id)}
         strategy={verticalListSortingStrategy}

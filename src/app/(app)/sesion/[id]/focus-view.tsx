@@ -41,6 +41,16 @@ type Props = {
   initialIndex: number;
   onExit: () => void;
   onIndexChange: (i: number) => void;
+  /**
+   * Notifica al padre cada vez que se registra una serie desde focus para
+   * que SessionView tenga esos logs visibles al salir del modo focus.
+   */
+  onLogCommitted: (log: SetLog) => void;
+  /**
+   * Error del padre al guardar. Lo mostramos para que el user sepa que algo
+   * salió mal (misma gramática que SessionView).
+   */
+  onSaveError?: (error: string | null) => void;
 };
 
 const DEFAULT_REST = 60;
@@ -57,6 +67,8 @@ export function FocusView({
   initialIndex,
   onExit,
   onIndexChange,
+  onLogCommitted,
+  onSaveError,
 }: Props) {
   const router = useRouter();
   const [i, setI] = useState(initialIndex);
@@ -208,9 +220,11 @@ export function FocusView({
       created_at: new Date().toISOString(),
     };
     setCurrentSets((p) => [...p, newLog]);
+    // Subir el log al padre para que SessionView lo tenga al salir de focus.
+    onLogCommitted(newLog);
     setRest(ex.descanso_seg ?? DEFAULT_REST);
     if (esTiempo) setHoldSecs(durObjetivo);
-    await logSetOffline({
+    const res = await logSetOffline({
       sessionId,
       routineExerciseId: ex.id,
       exerciseId: ex.exercise_id,
@@ -225,6 +239,8 @@ export function FocusView({
       rir: null,
       completada: true,
     });
+    if (!res.ok) onSaveError?.(res.error);
+    else onSaveError?.(null);
   }
 
   function siguiente() {

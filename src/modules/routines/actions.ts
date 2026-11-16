@@ -321,7 +321,18 @@ export async function removeExercise(routineExerciseId: string): Promise<Result>
     .from("routine_exercises")
     .delete()
     .eq("id", routineExerciseId);
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // 23503 = FK violation (set_logs.routine_exercise_id on delete restrict).
+    // Mensaje humano: no se puede borrar un ejercicio que ya entrenaste.
+    if (error.code === "23503") {
+      return {
+        ok: false,
+        error:
+          "No se puede eliminar: ya hay series registradas para este ejercicio. Probá reemplazarlo por otro desde el menú.",
+      };
+    }
+    return { ok: false, error: error.message };
+  }
   revalidatePath("/rutina");
   return { ok: true, data: undefined };
 }

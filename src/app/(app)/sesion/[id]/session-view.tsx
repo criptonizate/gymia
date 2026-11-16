@@ -579,6 +579,21 @@ export function SessionView({
           initialIndex={i}
           onIndexChange={setI}
           onExit={() => setFocusMode(false)}
+          onLogCommitted={(log) => {
+            setLogs((prev) => {
+              // Reemplazar cualquier log temporal del mismo (routine_exercise, serie)
+              const next = prev.filter(
+                (l) =>
+                  !(
+                    l.routine_exercise_id === log.routine_exercise_id &&
+                    l.numero_serie === log.numero_serie
+                  ),
+              );
+              next.push(log);
+              return next;
+            });
+          }}
+          onSaveError={setSaveError}
         />
       )}
 

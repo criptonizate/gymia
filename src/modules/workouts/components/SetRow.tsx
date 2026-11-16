@@ -52,13 +52,9 @@ export function SetRow({
   const [done, setDone] = useState<boolean>(initialCompletada);
   const unit = useUnit();
 
-  useEffect(() => {
-    setPeso(initialPeso ?? objetivoPeso ?? null);
-    setReps(initialReps ?? objetivoRepsMax ?? objetivoRepsMin ?? null);
-    setRir(initialRir ?? null);
-    setDone(initialCompletada);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPeso, initialReps, initialRir, initialCompletada]);
+  // No hay sync desde props: el componente se remonta via `key` cuando cambia
+  // la serie o el ejercicio, así los initial* se aplican fresh. Si re-sincroniz
+  // áramos dentro de la misma identidad pisaríamos lo que el user está tipeando.
 
   const missed =
     done &&
@@ -82,24 +78,40 @@ export function SetRow({
     rir: number | null;
     completada: boolean;
   };
+  // Último valor pendiente para poder flushearlo en el unmount.
+  const pendingRef = useRef<CommitValues | null>(null);
+  // Guardo onCommit en ref para no depender de su identidad en el cleanup.
+  const onCommitRef = useRef(onCommit);
+  onCommitRef.current = onCommit;
+
   function flush(values: CommitValues) {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    pendingRef.current = null;
     onCommit(values);
   }
   function commit(values: CommitValues) {
     if (timerRef.current) clearTimeout(timerRef.current);
+    pendingRef.current = values;
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
+      pendingRef.current = null;
       onCommit(values);
     }, 300);
   }
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        // Flush del último valor pendiente al desmontar (swipe entre
+        // ejercicios, salir de la sesión, etc) para no perder lo que el
+        // user tipeó.
+        const pending = pendingRef.current;
+        if (pending) onCommitRef.current(pending);
+      }
     };
   }, []);
 

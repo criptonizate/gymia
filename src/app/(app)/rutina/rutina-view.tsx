@@ -30,11 +30,13 @@ export function RutinaView({ routine }: Props) {
   const [confirmRegenOpen, setConfirmRegenOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const diasDeSemana = routine.dias.filter((d) => d.semana === sem);
 
   function regen() {
+    setActionError(null);
     start(async () => {
       const res = await regenerateActive({
         diasPorSemana: routine.dias_por_semana as 2 | 3 | 4 | 5 | 6,
@@ -43,17 +45,24 @@ export function RutinaView({ routine }: Props) {
         objetivo: routine.objetivo,
         entorno: routine.entorno ?? undefined,
       });
-      setConfirmRegenOpen(false);
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        setConfirmRegenOpen(false);
+        router.refresh();
+      } else {
+        setActionError(res.error ?? "No se pudo regenerar la rutina.");
+      }
     });
   }
 
   function eliminar() {
+    setActionError(null);
     start(async () => {
       const res = await deleteActiveRoutine();
       if (res.ok) {
         setConfirmDeleteOpen(false);
         router.push("/hoy");
+      } else {
+        setActionError(res.error ?? "No se pudo eliminar la rutina.");
       }
     });
   }
@@ -170,7 +179,10 @@ export function RutinaView({ routine }: Props) {
 
       <BottomSheet
         open={confirmDeleteOpen}
-        onClose={() => setConfirmDeleteOpen(false)}
+        onClose={() => {
+          setConfirmDeleteOpen(false);
+          setActionError(null);
+        }}
         title="¿Eliminar la rutina?"
       >
         <div className="flex flex-col gap-4 pb-2">
@@ -178,6 +190,11 @@ export function RutinaView({ routine }: Props) {
             Esto borra la rutina activa. El historial de sesiones queda
             intacto. Después podés generar una nueva.
           </p>
+          {actionError && (
+            <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {actionError}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -221,7 +238,10 @@ export function RutinaView({ routine }: Props) {
 
       <BottomSheet
         open={confirmRegenOpen}
-        onClose={() => setConfirmRegenOpen(false)}
+        onClose={() => {
+          setConfirmRegenOpen(false);
+          setActionError(null);
+        }}
         title="Regenerar rutina"
       >
         <div className="flex flex-col gap-4 pb-2">
@@ -232,6 +252,11 @@ export function RutinaView({ routine }: Props) {
             inactiva y se van a <strong>perder los supersets, el reorden y los
             cambios manuales</strong> de ejercicios.
           </p>
+          {actionError && (
+            <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {actionError}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button
               variant="outline"

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
-
 type Row = {
   created_at: string;
   numero_serie: number;

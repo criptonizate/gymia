@@ -82,7 +82,10 @@ export default async function HoyPage() {
         <p className="text-sm text-muted-foreground">{day.nombre}</p>
       </header>
 
-      <StreakBadge days={trainingDays} />
+      <StreakBadge
+        days={trainingDays}
+        weekTarget={ctx.routineConfig.diasPorSemana}
+      />
 
       <ul className="flex flex-col gap-2">
         {day.ejercicios.map((e) => {

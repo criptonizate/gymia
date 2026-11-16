@@ -6,9 +6,12 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  HelpCircle,
   Minus,
   Play,
   Plus,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
@@ -17,6 +20,12 @@ import {
   unlockAudio,
   vibrate,
 } from "@/modules/workouts/components/beep";
+import {
+  readVoiceEnabled,
+  say,
+  setVoiceEnabled,
+} from "@/modules/workouts/components/voice";
+import { FocusTutorial } from "./focus-tutorial";
 import { fromDisplay, KG_TO_LB, toDisplay } from "@/lib/units";
 import { useUnit } from "@/lib/use-unit";
 import { weightStep } from "@/modules/workouts/progression";
@@ -84,6 +93,39 @@ export function FocusView({
   const [holdSecs, setHoldSecs] = useState<number>(durObjetivo);
   const [holdRunning, setHoldRunning] = useState(false);
   const [rest, setRest] = useState<number | null>(null);
+  const [voice, setVoice] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [sinMedir, setSinMedir] = useState(false);
+
+  useEffect(() => {
+    setVoice(readVoiceEnabled());
+    try {
+      if (!localStorage.getItem("gymia-focus-tutorial-seen")) {
+        setShowTutorial(true);
+      }
+    } catch {
+      // noop
+    }
+  }, []);
+
+  function dismissTutorial() {
+    try {
+      localStorage.setItem("gymia-focus-tutorial-seen", "1");
+    } catch {
+      // noop
+    }
+    setShowTutorial(false);
+  }
+
+  function toggleVoice() {
+    const next = !voice;
+    setVoice(next);
+    setVoiceEnabled(next);
+    if (next) {
+      unlockAudio();
+      say("Narración activada");
+    }
+  }
 
   // Cambio de ejercicio: resetear defaults pero NO el descanso (que puede
   // seguir corriendo mientras el user "espía" el próximo).
@@ -114,6 +156,7 @@ export function FocusView({
     if (rest <= 0) {
       beep(200, 880);
       vibrate([200, 100, 200]);
+      say(`Serie ${Math.min(serieActual, ex.series)}. Dale.`);
       setRest(null);
       return;
     }
@@ -142,6 +185,7 @@ export function FocusView({
   async function marcarSerie(duracionReal?: number) {
     unlockAudio();
     vibrate(20);
+    say(`Serie ${serieActual} marcada`);
     const num = serieActual;
     const planPeso = esPeso ? ex.peso_objetivo_kg : null;
     const planReps = esTiempo ? null : ex.reps_max ?? ex.reps_min ?? null;
@@ -219,6 +263,28 @@ export function FocusView({
           </h1>
         </div>
         <button
+          onClick={() => setShowTutorial(true)}
+          aria-label="Ayuda"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
+        <button
+          onClick={toggleVoice}
+          aria-label={voice ? "Silenciar narración" : "Activar narración"}
+          className={`flex h-11 w-11 items-center justify-center rounded-full border ${
+            voice
+              ? "border-primary bg-[var(--primary-soft)] text-primary"
+              : "border-border bg-card"
+          }`}
+        >
+          {voice ? (
+            <Volume2 className="h-5 w-5" />
+          ) : (
+            <VolumeX className="h-5 w-5" />
+          )}
+        </button>
+        <button
           onClick={handleExit}
           aria-label="Salir del modo focus"
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
@@ -226,6 +292,7 @@ export function FocusView({
           <X className="h-5 w-5" />
         </button>
       </header>
+      {showTutorial && <FocusTutorial onClose={dismissTutorial} />}
 
       {rest != null && (
         <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[var(--primary-soft)] px-3 py-2">
@@ -326,7 +393,7 @@ export function FocusView({
         </section>
       ) : (
         <section className="flex flex-1 flex-col items-stretch justify-between gap-4 p-4">
-          {firstLast && (
+          {firstLast && !sinMedir && (
             <p className="text-center text-sm text-muted-foreground">
               Última vez:{" "}
               {esPeso
@@ -335,32 +402,80 @@ export function FocusView({
             </p>
           )}
 
-          {esPeso && (
-            <Stepper
-              label={unit}
-              value={displayPeso ?? 0}
-              step={unit === "lb" ? Math.round(stepKg * KG_TO_LB) : stepKg}
-              onChange={(v) => setPeso(fromDisplay(v, unit))}
-              allowEdit
-            />
-          )}
-
-          <Stepper
-            label="reps"
-            value={reps}
-            step={1}
-            onChange={setReps}
-            tone={missed ? "warning" : "normal"}
-            allowEdit
-          />
-
           <button
-            onClick={() => marcarSerie()}
-            className="flex min-h-20 w-full items-center justify-center gap-3 rounded-2xl bg-primary text-2xl font-black text-primary-foreground"
+            onClick={() => setSinMedir((v) => !v)}
+            className="self-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground"
           >
-            <Check className="h-7 w-7" />
-            Marcar serie {serieActual}
+            {sinMedir ? "Volver a medir" : "Modo sin medir"}
           </button>
+
+          {sinMedir ? (
+            <div className="flex flex-col gap-3 pt-2">
+              <p className="text-center text-sm text-muted-foreground">
+                ¿Cómo sentiste la serie?
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <RpeButton
+                  emoji="💪"
+                  label="Fácil"
+                  onClick={() => {
+                    const bump = esPeso ? stepKg : 1;
+                    if (esPeso) setPeso((p) => (p ?? 0) + bump);
+                    else setReps((r) => r + 1);
+                    marcarSerie();
+                  }}
+                />
+                <RpeButton
+                  emoji="✅"
+                  label="Bien"
+                  onClick={() => marcarSerie()}
+                />
+                <RpeButton
+                  emoji="🥵"
+                  label="Durísimo"
+                  onClick={() => {
+                    const bump = esPeso ? stepKg : 1;
+                    if (esPeso)
+                      setPeso((p) => Math.max(0, (p ?? 0) - bump));
+                    else setReps((r) => Math.max(0, r - 1));
+                    marcarSerie();
+                  }}
+                />
+              </div>
+              <p className="text-center text-[11px] text-muted-foreground">
+                La próxima subimos, mantenemos o bajamos solos.
+              </p>
+            </div>
+          ) : (
+            <>
+              {esPeso && (
+                <Stepper
+                  label={unit}
+                  value={displayPeso ?? 0}
+                  step={unit === "lb" ? Math.round(stepKg * KG_TO_LB) : stepKg}
+                  onChange={(v) => setPeso(fromDisplay(v, unit))}
+                  allowEdit
+                />
+              )}
+
+              <Stepper
+                label="reps"
+                value={reps}
+                step={1}
+                onChange={setReps}
+                tone={missed ? "warning" : "normal"}
+                allowEdit
+              />
+
+              <button
+                onClick={() => marcarSerie()}
+                className="flex min-h-20 w-full items-center justify-center gap-3 rounded-2xl bg-primary text-2xl font-black text-primary-foreground"
+              >
+                <Check className="h-7 w-7" />
+                Marcar serie {serieActual}
+              </button>
+            </>
+          )}
         </section>
       )}
 
@@ -479,6 +594,26 @@ function Stepper({
         <Plus className="h-7 w-7" />
       </button>
     </div>
+  );
+}
+
+function RpeButton({
+  emoji,
+  label,
+  onClick,
+}: {
+  emoji: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-card"
+    >
+      <span className="text-4xl">{emoji}</span>
+      <span className="text-xs font-semibold">{label}</span>
+    </button>
   );
 }
 

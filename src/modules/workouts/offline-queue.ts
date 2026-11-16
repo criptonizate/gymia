@@ -122,16 +122,35 @@ export async function drainQueue(): Promise<void> {
           else await update({ ...it, tries: it.tries + 1 });
           continue;
         }
-        const r = await logSet(it.payload);
-        if (r.ok) {
-          await remove(it.id);
-        } else {
-          await update({ ...it, tries: it.tries + 1 });
-          if (it.tries + 1 >= MAX_TRIES) await remove(it.id);
-          // Seguimos con el siguiente en vez de abortar: un item roto
-          // no debe bloquear a los demás.
-          continue;
+        let errMsg: string | null = null;
+        let threw = false;
+        try {
+          const r = await logSet(it.payload);
+          if (r.ok) {
+            await remove(it.id);
+            continue;
+          }
+          errMsg = r.error ?? "unknown";
+        } catch (e) {
+          threw = true;
+          errMsg = e instanceof Error ? e.message : String(e);
         }
+        // Clasificación: un fallo de red (fetch roto, timeout) NO debe
+        // contar como intento consumido — el user quiere que lo volvamos
+        // a probar cuando haya buena conexión. Si fue error de servidor
+        // / validación / RLS sí incrementamos tries y descartamos a los
+        // MAX_TRIES para no dejar basura para siempre.
+        const esRed =
+          threw || /network|fetch|load failed|timeout|offline/i.test(errMsg ?? "");
+        if (esRed) {
+          // Dejamos la entrada como está y abortamos el drain; probaremos
+          // otra vez cuando dispare el próximo evento "online".
+          return;
+        }
+        await update({ ...it, tries: it.tries + 1 });
+        if (it.tries + 1 >= MAX_TRIES) await remove(it.id);
+        // Seguimos con el siguiente en vez de abortar: un item roto no
+        // debe bloquear a los demás.
       }
     } finally {
       drainingPromise = null;

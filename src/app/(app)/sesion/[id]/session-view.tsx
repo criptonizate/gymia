@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { TechniqueSheet } from "@/modules/exercises/components/TechniqueSheet";
-import type { ExerciseWithRelations } from "@/modules/exercises/types";
+import type { ExerciseWithRelations, Patron } from "@/modules/exercises/types";
 import { SetRow } from "@/modules/workouts/components/SetRow";
 import { RestTimer } from "@/modules/workouts/components/RestTimer";
 import { HoldTimer } from "@/modules/workouts/components/HoldTimer";
@@ -53,7 +53,21 @@ type Props = {
   substitutes: Record<string, ExerciseWithRelations>;
 };
 
-type Override = { exerciseId: string; exerciseSlug: string; nombre: string; media_url: string | null; media_frames: string[]; muscle_group_slug: string; instrucciones: string[]; errores_comunes: string[]; youtube_query: string | null; equipment_slug: string; tipo_registro: "peso_reps" | "reps" | "tiempo" };
+type Override = {
+  exerciseId: string;
+  exerciseSlug: string;
+  nombre: string;
+  media_url: string | null;
+  media_frames: string[];
+  muscle_group_slug: string;
+  instrucciones: string[];
+  errores_comunes: string[];
+  youtube_query: string | null;
+  equipment_slug: string;
+  tipo_registro: "peso_reps" | "reps" | "tiempo";
+  patron: Patron;
+  tipo: "compuesto" | "aislamiento";
+};
 
 export function SessionView({
   sessionId,
@@ -83,6 +97,8 @@ export function SessionView({
         youtube_query: ex.youtube_query,
         equipment_slug: ex.equipment.slug,
         tipo_registro: ex.tipo_registro,
+        patron: ex.patron,
+        tipo: ex.tipo,
       };
     }
     return init;
@@ -95,6 +111,12 @@ export function SessionView({
   // Arrancar sync offline al montar la vista
   useEffect(() => startQueueSyncOnline(), []);
   useEffect(() => startFinishSyncOnline(), []);
+
+  // El banner de error de guardado está ligado al ejercicio donde pasó.
+  // Si el user cambia de ejercicio, lo limpiamos para no confundir.
+  useEffect(() => {
+    setSaveError(null);
+  }, [i]);
 
   // Guardar en IndexedDB el contexto de esta sesión (por si cae internet,
   // podés reabrir /sesion/[id] y seguir).
@@ -155,6 +177,12 @@ export function SessionView({
   // dentro de un overlay o de un control interactivo).
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   function onTouchStart(e: React.TouchEvent) {
+    // En focus/summary la interacción pertenece al overlay. Si capturamos
+    // el swipe acá, cambiamos el `i` del padre sin que el user lo pida.
+    if (focusMode || summaryOpen) {
+      touchStart.current = null;
+      return;
+    }
     const t = e.touches[0];
     // Si el toque empezó dentro de un dialog/button/input/textarea/select,
     // no capturamos el swipe (evita robar scroll de bottom sheets y taps).
@@ -194,6 +222,12 @@ export function SessionView({
       duracion_seg?: number | null;
     },
   ) {
+    // Snapshot del log previo para poder revertir si el server falla.
+    const prevLog = logs.find(
+      (l) =>
+        l.routine_exercise_id === current.id &&
+        l.numero_serie === serieNumero,
+    );
     // Local update
     setLogs((prev) => {
       const next = prev.filter(
@@ -244,8 +278,26 @@ export function SessionView({
       rir: data.rir ?? null,
       completada: data.completada,
     });
-    if (!res.ok) setSaveError(res.error);
-    else setSaveError(null);
+    if (!res.ok) {
+      // Revertir el optimistic: dejar el log como estaba antes (si no había
+      // nada previo, lo sacamos).
+      setLogs((prev) => {
+        const next = prev.filter(
+          (l) =>
+            !(
+              l.routine_exercise_id === current.id &&
+              l.numero_serie === serieNumero
+            ),
+        );
+        if (prevLog) next.push(prevLog);
+        return next;
+      });
+      // Cerrar el rest timer que se abrió optimistamente.
+      if (data.completada && activeTipoRegistro !== "tiempo") setRest(null);
+      setSaveError(res.error);
+    } else {
+      setSaveError(null);
+    }
   }
 
   function onHoldComplete(segs: number, completo: boolean) {
@@ -582,6 +634,8 @@ export function SessionView({
               youtube_query: ex.youtube_query,
               equipment_slug: ex.equipment.slug,
               tipo_registro: ex.tipo_registro,
+              patron: ex.patron,
+              tipo: ex.tipo,
             },
           }));
           setBusyOpen(false);
@@ -635,6 +689,7 @@ export function SessionView({
           ejercicios={ejercicios}
           lastLogsByExercise={lastLogsByExercise}
           onFinish={onFinish}
+          onCancel={() => setSummaryOpen(false)}
         />
       )}
     </div>
@@ -700,6 +755,8 @@ function overrideAsExercise(
     errores_comunes: override.errores_comunes,
     youtube_query: override.youtube_query,
     tipo_registro: override.tipo_registro,
+    patron: override.patron,
+    tipo: override.tipo,
   };
 }
 
@@ -729,12 +786,14 @@ function SummaryOverlay({
   ejercicios,
   lastLogsByExercise,
   onFinish,
+  onCancel,
 }: {
   startedAt: string;
   logs: SetLog[];
   ejercicios: RoutineExerciseRow[];
   lastLogsByExercise: Record<string, SetLog[]>;
   onFinish: (notas?: string) => void;
+  onCancel: () => void;
 }) {
   const [notas, setNotas] = useState("");
   const [shareHint, setShareHint] = useState<string | null>(null);
@@ -765,8 +824,19 @@ function SummaryOverlay({
   }
   return (
     <div className="fixed inset-0 z-[90] mx-auto flex max-w-xl flex-col overflow-y-auto bg-background p-6">
-      <h2 className="text-2xl font-bold">¡Terminaste!</h2>
-      <p className="text-sm text-muted-foreground">Buen laburo.</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-2xl font-bold">¡Terminaste!</h2>
+          <p className="text-sm text-muted-foreground">Buen laburo.</p>
+        </div>
+        <button
+          onClick={onCancel}
+          aria-label="Volver sin terminar"
+          className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-border bg-card text-lg transition-transform duration-150 active:scale-[0.92]"
+        >
+          ×
+        </button>
+      </div>
       <div className="mt-6 grid grid-cols-2 gap-3">
         <Stat label="Duración" value={`${mins} min`} />
         <Stat label="Series" value={`${seriesCompletas}/${seriesPlanificadas}`} />

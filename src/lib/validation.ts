@@ -55,10 +55,17 @@ export type ProfileUpdateIn = z.infer<typeof ProfileUpdate>;
 export const EmailStr = z.string().trim().email();
 export const PasswordStr = z.string().min(8).max(200);
 
+// Path local seguro: empieza con "/" pero no con "//" ni con "/\" (eso
+// escapa del origen y abre un open-redirect post login).
+const LocalPath = z
+  .string()
+  .regex(/^\/(?![/\\])/, "Path no válido")
+  .max(2048);
+
 export const SignInInput = z.object({
   email: EmailStr,
   password: PasswordStr,
-  next: z.string().startsWith("/").optional(),
+  next: LocalPath.optional(),
 });
 
 export const SignUpInput = z.object({

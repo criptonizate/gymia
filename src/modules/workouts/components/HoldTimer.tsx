@@ -22,6 +22,17 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
   const beepEndFired = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const completeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Al desmontar cancelamos el auto-close pendiente.
+  useEffect(() => {
+    return () => {
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Wake Lock
   useEffect(() => {
@@ -76,10 +87,13 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
       beep(300, 880);
       vibrate([200, 100, 200]);
       setPhase("done");
-      // auto-cerrar y reportar logro completo; cancelamos el timeout si
-      // el componente se desmonta antes de los 400 ms.
-      const t = setTimeout(() => onCompleteRef.current(targetSeconds, true), 400);
-      return () => clearTimeout(t);
+      // Guardamos el timeout en un ref para no cancelarlo cuando el cambio
+      // de phase vuelve a correr este effect (eso rompía la auto-finaliza-
+      // ción del hold). Lo limpia el unmount en el effect dedicado.
+      completeTimeoutRef.current = setTimeout(
+        () => onCompleteRef.current(targetSeconds, true),
+        400,
+      );
     }
   }, [elapsed, targetSeconds, phase]);
 

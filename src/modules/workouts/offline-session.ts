@@ -195,30 +195,57 @@ export async function saveSessionNotasOffline(
   }
 }
 
+const MAX_FINISH_TRIES = 5;
+let drainingFinishPromise: Promise<void> | null = null;
+
 async function drainFinish(): Promise<void> {
-  const uid = await currentUserId();
-  if (!uid || typeof window === "undefined" || !navigator.onLine) return;
-  let entries: FinishEntry[] = [];
-  try {
-    entries = (await tx(FINISH_STORE, "readonly", (s) =>
-      asPromise(s.getAll()),
-    )) as FinishEntry[];
-  } catch {
-    return;
-  }
-  for (const it of entries) {
-    if (it.user_id !== uid) continue;
-    const r = await finishSession(it.session_id, it.notas);
-    if (r.ok) {
-      await tx(FINISH_STORE, "readwrite", (s) => s.delete(it.id));
-      await clearSessionCache(it.session_id);
-    } else {
-      await tx(FINISH_STORE, "readwrite", (s) => {
-        const u = { ...it, tries: it.tries + 1 } satisfies FinishEntry;
-        s.put(u);
-      });
+  if (drainingFinishPromise) return drainingFinishPromise;
+  drainingFinishPromise = (async () => {
+    try {
+      const uid = await currentUserId();
+      if (!uid || typeof window === "undefined" || !navigator.onLine) return;
+      let entries: FinishEntry[] = [];
+      try {
+        entries = (await tx(FINISH_STORE, "readonly", (s) =>
+          asPromise(s.getAll()),
+        )) as FinishEntry[];
+      } catch {
+        return;
+      }
+      for (const it of entries) {
+        if (it.user_id !== uid) continue;
+        let threw = false;
+        let err = "";
+        let okFlag = false;
+        try {
+          const r = await finishSession(it.session_id, it.notas);
+          okFlag = r.ok;
+          if (!r.ok) err = r.error ?? "";
+        } catch (e) {
+          threw = true;
+          err = e instanceof Error ? e.message : String(e);
+        }
+        if (okFlag) {
+          await tx(FINISH_STORE, "readwrite", (s) => s.delete(it.id));
+          await clearSessionCache(it.session_id);
+          continue;
+        }
+        // Clasificación idéntica al queue de sets: errores de red no
+        // consumen intentos.
+        const esRed = threw || /network|fetch|load failed|timeout|offline/i.test(err);
+        if (esRed) return;
+        const next = { ...it, tries: it.tries + 1 } satisfies FinishEntry;
+        if (next.tries >= MAX_FINISH_TRIES) {
+          await tx(FINISH_STORE, "readwrite", (s) => s.delete(it.id));
+        } else {
+          await tx(FINISH_STORE, "readwrite", (s) => s.put(next));
+        }
+      }
+    } finally {
+      drainingFinishPromise = null;
     }
-  }
+  })();
+  return drainingFinishPromise;
 }
 
 export function startFinishSyncOnline(): () => void {

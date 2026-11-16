@@ -40,10 +40,12 @@
   --card-foreground: #09090b;
   --popover: #ffffff;
   --popover-foreground: #09090b;
-  --primary: #65a30d;
+  /* Primary oscurecido a lime-700 para cumplir WCAG AA (contraste ≈ 4.6:1
+     con blanco; antes #65a30d quedaba en 3.1:1, borderline para texto). */
+  --primary: #4d7c0f;
   --primary-foreground: #ffffff;
-  --primary-strong: #4d7c0f;
-  --primary-soft: rgba(101, 163, 13, 0.12);
+  --primary-strong: #3f6212;
+  --primary-soft: rgba(77, 124, 15, 0.12);
   --primary-light: #a3e635;
   --secondary: #f4f4f5;
   --secondary-foreground: #09090b;
@@ -53,11 +55,12 @@
   --accent-foreground: #09090b;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --warning: #d97706;
-  --warning-soft: rgba(217, 119, 6, 0.12);
+  /* Warning también oscurecido (amber-700, ≈ 4.6:1). */
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
   --border: #e4e4e7;
   --input: #e4e4e7;
-  --ring: #65a30d;
+  --ring: #4d7c0f;
   --disabled: #a1a1aa;
 }
 

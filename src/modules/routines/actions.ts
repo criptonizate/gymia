@@ -160,12 +160,23 @@ export async function swapExercise(
     };
   }
 
-  // Si cambia el tipo_registro, resetear los campos específicos.
-  const patch: Record<string, unknown> = { exercise_id: newExerciseId };
+  // El peso y el RIR objetivo eran del ejercicio viejo. Resetearlos: la
+  // progresión los recalibra en la próxima sesión.
+  const patch: Record<string, unknown> = {
+    exercise_id: newExerciseId,
+    peso_objetivo_kg: null,
+    rir_objetivo: null,
+  };
   if (curEx.tipo_registro !== nuevo.tipo_registro) {
-    patch.duracion_seg = null;
-    patch.reps_min = null;
-    patch.reps_max = null;
+    if (nuevo.tipo_registro === "tiempo") {
+      patch.duracion_seg = 30;
+      patch.reps_min = null;
+      patch.reps_max = null;
+    } else {
+      patch.duracion_seg = null;
+      patch.reps_min = 8;
+      patch.reps_max = 12;
+    }
   }
   const { error } = await supabase
     .from("routine_exercises")
@@ -174,6 +185,7 @@ export async function swapExercise(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/rutina");
+  revalidatePath("/hoy");
   return { ok: true, data: undefined };
 }
 
@@ -207,19 +219,45 @@ export async function reorderExercise(
   const other = siblings[targetIdx];
 
   // Evitar violar el UNIQUE(day, orden) parqueando uno en un orden grande.
+  // Chequeamos cada paso: si uno falla a mitad (red cae, conflicto), los
+  // pasos siguientes dejarían al day con una fila en 9000 y órdenes rotos
+  // sin aviso.
   const PARK = 9000;
-  await supabase
+  let r = await supabase
     .from("routine_exercises")
     .update({ orden: PARK })
     .eq("id", ex.id);
-  await supabase
+  if (r.error) return { ok: false, error: r.error.message };
+
+  r = await supabase
     .from("routine_exercises")
     .update({ orden: ex.orden })
     .eq("id", other.id);
-  await supabase
+  if (r.error) {
+    // Revertir el park para no dejar la fila con orden 9000.
+    await supabase
+      .from("routine_exercises")
+      .update({ orden: ex.orden })
+      .eq("id", ex.id);
+    return { ok: false, error: r.error.message };
+  }
+
+  r = await supabase
     .from("routine_exercises")
     .update({ orden: other.orden })
     .eq("id", ex.id);
+  if (r.error) {
+    // Otro paso roto a mitad. Intentamos dejar el día coherente.
+    await supabase
+      .from("routine_exercises")
+      .update({ orden: other.orden })
+      .eq("id", other.id);
+    await supabase
+      .from("routine_exercises")
+      .update({ orden: ex.orden })
+      .eq("id", ex.id);
+    return { ok: false, error: r.error.message };
+  }
 
   revalidatePath("/rutina");
   return { ok: true, data: undefined };

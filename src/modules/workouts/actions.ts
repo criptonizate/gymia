@@ -38,7 +38,12 @@ export async function startOrContinueSession(
   if (open) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activa = (open as any).day?.routine?.activa === true;
-    if (activa) return { ok: true, data: { sessionId: open.id } };
+    const mismoDia = open.routine_day_id === routineDayId;
+    // Sólo retomamos la abierta si es del día que el user pidió — así
+    // "Empezar" en otro día no te manda a la sesión del día anterior.
+    if (activa && mismoDia) {
+      return { ok: true, data: { sessionId: open.id } };
+    }
     await supabase
       .from("workout_sessions")
       .update({ finished_at: new Date().toISOString() })
@@ -203,6 +208,7 @@ export async function listSubstitutes(
     .from("exercises")
     .select(
       `id, nombre, slug, media_frames, media_url, patron, tipo, tipo_registro,
+       instrucciones, errores_comunes, youtube_query,
        muscle_group:muscle_groups!inner(id,nombre,slug),
        equipment:equipment!inner(id,nombre,slug)`,
     )
@@ -221,11 +227,17 @@ export async function replaceInRoutine(
   newExerciseId: string,
 ): Promise<Result> {
   const supabase = await createClient();
+  // Validamos que el user tenga visibilidad del ejercicio nuevo (RLS). Si
+  // es un id ajeno o inexistente, data viene null y lo rechazamos en vez
+  // de persistir un exercise_id que el join !inner va a ocultar después.
   const { data: ex } = await supabase
     .from("exercises")
     .select("tipo_registro")
     .eq("id", newExerciseId)
     .maybeSingle();
+  if (!ex) {
+    return { ok: false, error: "No encontré el ejercicio o no tenés acceso." };
+  }
   // El objetivo de peso y RIR pertenecían al ejercicio viejo. Nulearlos
   // evita que "3×8-12 obj 100kg" quede arrastrado a una máquina con otro
   // rango de carga. La sugerencia de progresión los recalculará.
@@ -291,6 +303,11 @@ export async function updateSetLog(
     .select("exercise:exercises!inner(tipo_registro)")
     .eq("id", id)
     .maybeSingle();
+  if (!log) {
+    // El log no existe o RLS lo bloquea. No lo tratamos como éxito (antes
+    // devolvíamos ok:true y la UI creía que se guardó).
+    return { ok: false, error: "No encontré esa serie o no tenés permiso." };
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tipo = (log as any)?.exercise?.tipo_registro as
     | "peso_reps"
@@ -308,7 +325,11 @@ export async function updateSetLog(
     sanitized.duracion_seg = null;
   }
 
-  const { error } = await supabase.from("set_logs").update(sanitized).eq("id", id);
+  const { error, count } = await supabase
+    .from("set_logs")
+    .update(sanitized, { count: "exact" })
+    .eq("id", id);
   if (error) return { ok: false, error: error.message };
+  if (!count) return { ok: false, error: "No se guardó: fila no accesible." };
   return { ok: true, data: undefined };
 }

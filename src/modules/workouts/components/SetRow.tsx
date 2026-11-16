@@ -52,9 +52,13 @@ export function SetRow({
   const [done, setDone] = useState<boolean>(initialCompletada);
   const unit = useUnit();
 
-  // No hay sync desde props: el componente se remonta via `key` cuando cambia
-  // la serie o el ejercicio, así los initial* se aplican fresh. Si re-sincroniz
-  // áramos dentro de la misma identidad pisaríamos lo que el user está tipeando.
+  // peso/reps no se sincronizan desde props: pisaríamos lo que el user está
+  // tipeando. En cambio `done` SI tiene que reflejar cambios externos (ej.
+  // una serie marcada desde modo focus), así que lo sincronizamos — pero
+  // ese set no dispara commit, sólo UI.
+  useEffect(() => {
+    setDone(initialCompletada);
+  }, [initialCompletada]);
 
   const missed =
     done &&

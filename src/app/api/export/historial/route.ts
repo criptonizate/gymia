@@ -14,7 +14,11 @@ type Row = {
 
 function csvEscape(v: string | number | boolean | null): string {
   if (v == null) return "";
-  const s = String(v);
+  let s = String(v);
+  // Prevención de CSV injection: si Excel/Sheets abre el archivo, una
+  // celda que empieza con =, +, -, @, tab o CR puede ejecutarse como
+  // fórmula (p.ej. `=HYPERLINK(...)`). Prefijar con `'` la neutraliza.
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

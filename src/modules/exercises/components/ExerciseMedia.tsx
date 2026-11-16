@@ -19,6 +19,9 @@ type Props = {
   minimal?: boolean;
   /** Pista a next/image para elegir el srcset correcto. */
   sizes?: string;
+  /** object-fit del Image. "cover" por defecto (miniaturas); "contain" para
+   *  mostrar el movimiento completo sin cortar. */
+  fit?: "cover" | "contain";
 };
 
 const INTERVAL_MS = 800;
@@ -33,6 +36,7 @@ export function ExerciseMedia({
   className,
   minimal = false,
   sizes = "(max-width: 448px) 100vw, 448px",
+  fit = "cover",
 }: Props) {
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -104,7 +108,7 @@ export function ExerciseMedia({
         fill
         sizes={sizes}
         unoptimized={hasGif /* GIF animado no debe pasar por el optimizer */}
-        className="object-cover"
+        className={fit === "contain" ? "object-contain" : "object-cover"}
         draggable={false}
         loading="lazy"
       />

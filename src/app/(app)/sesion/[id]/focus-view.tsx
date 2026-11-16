@@ -323,7 +323,7 @@ export function FocusView({
         </div>
       )}
 
-      <div className="relative h-40 shrink-0">
+      <div className="relative h-52 shrink-0 bg-[var(--primary-soft)]">
         <ExerciseMedia
           mediaUrl={ex.exercise.media_url}
           frames={ex.exercise.media_frames}
@@ -333,6 +333,7 @@ export function FocusView({
           alt={ex.exercise.nombre}
           className="h-full w-full"
           sizes="448px"
+          fit="contain"
           minimal
         />
       </div>

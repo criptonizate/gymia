@@ -66,6 +66,14 @@ export function SetRow({
     reps != null &&
     reps < objetivoRepsMin;
 
+  // Si el RIR real quedó por encima del objetivo de forma consistente,
+  // avisamos: la carga fue menor a la óptima, conviene subir la próxima.
+  const excessRir =
+    done &&
+    rir != null &&
+    rirObjetivo != null &&
+    rir > rirObjetivo + 1;
+
   // Debounce de 300 ms; el ✓ hace flush inmediato.
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   type CommitValues = {
@@ -104,7 +112,7 @@ export function SetRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-xl border p-2",
+        "flex flex-col gap-1 rounded-xl border p-2",
         done
           ? missed
             ? "border-warning bg-[var(--warning-soft)]"
@@ -112,6 +120,7 @@ export function SetRow({
           : "border-border bg-card",
       )}
     >
+      <div className="flex items-center gap-2">
       <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-muted text-xs font-bold tabular-nums">
         {numero}
       </span>
@@ -171,6 +180,19 @@ export function SetRow({
           <span className="sr-only">no llegaste al mínimo</span>
         )}
       </button>
+      </div>
+      {done && missed && (
+        <p className="pl-9 text-[11px] text-warning">
+          No llegaste al mínimo ({objetivoRepsMin} reps) — bajá un poco la
+          carga la próxima.
+        </p>
+      )}
+      {excessRir && (
+        <p className="pl-9 text-[11px] text-primary">
+          Te sobró mucho (RIR {rir} &gt; objetivo {rirObjetivo}) — probá subir
+          la carga la próxima.
+        </p>
+      )}
     </div>
   );
 }

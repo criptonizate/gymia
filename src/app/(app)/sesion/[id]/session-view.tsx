@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
-  MoreHorizontal,
   Repeat,
   Check,
 } from "lucide-react";

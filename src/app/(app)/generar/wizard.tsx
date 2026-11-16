@@ -287,19 +287,27 @@ export function GenerarWizard({
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
-              {DIAS.map((d) => (
-                <BigPick
-                  key={d}
-                  active={cfg.diasPorSemana === d}
-                  onClick={() => {
-                    setCfg({ ...cfg, diasPorSemana: d });
-                    next();
-                  }}
-                >
-                  <span className="text-3xl font-bold tabular-nums">{d}</span>
-                  <span className="text-xs text-muted-foreground">días</span>
-                </BigPick>
-              ))}
+              {DIAS.map((d) => {
+                const rec = cfg.nivel === "principiante" && d === 3;
+                return (
+                  <BigPick
+                    key={d}
+                    active={cfg.diasPorSemana === d}
+                    onClick={() => {
+                      setCfg({ ...cfg, diasPorSemana: d });
+                      next();
+                    }}
+                  >
+                    <span className="text-3xl font-bold tabular-nums">{d}</span>
+                    <span className="text-xs text-muted-foreground">días</span>
+                    {rec && (
+                      <span className="mt-1 rounded-full bg-[var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        Recomendado
+                      </span>
+                    )}
+                  </BigPick>
+                );
+              })}
             </div>
           </Step>
         )}
@@ -307,21 +315,29 @@ export function GenerarWizard({
         {step === 2 && (
           <Step title="¿Cuántas semanas dura el plan?">
             <div className="grid grid-cols-2 gap-3">
-              {SEMANAS.map((s) => (
-                <BigPick
-                  key={s}
-                  active={cfg.semanas === s}
-                  onClick={() => {
-                    setCfg({ ...cfg, semanas: s });
-                    next();
-                  }}
-                >
-                  <span className="text-3xl font-bold tabular-nums">{s}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {s === 1 ? "semana" : "semanas"}
-                  </span>
-                </BigPick>
-              ))}
+              {SEMANAS.map((s) => {
+                const rec = cfg.nivel === "principiante" && s === 4;
+                return (
+                  <BigPick
+                    key={s}
+                    active={cfg.semanas === s}
+                    onClick={() => {
+                      setCfg({ ...cfg, semanas: s });
+                      next();
+                    }}
+                  >
+                    <span className="text-3xl font-bold tabular-nums">{s}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {s === 1 ? "semana" : "semanas"}
+                    </span>
+                    {rec && (
+                      <span className="mt-1 rounded-full bg-[var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        Recomendado
+                      </span>
+                    )}
+                  </BigPick>
+                );
+              })}
             </div>
           </Step>
         )}

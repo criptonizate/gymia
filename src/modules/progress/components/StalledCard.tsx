@@ -13,9 +13,13 @@ export function StalledCard({ items }: { items: StalledExercise[] }) {
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        No subiste el peso en las últimas 3 sesiones. Probá cambiar el ejercicio,
-        hacer una semana de descarga o revisar la técnica.
+        No subiste el peso en las últimas 3 sesiones. Tres opciones:
       </p>
+      <ul className="flex list-disc flex-col gap-0.5 pl-5 text-xs text-muted-foreground">
+        <li>Bajá un poco el RIR (ej. de 2 a 1) para empujar más.</li>
+        <li>Hacé una semana de descarga: mismo peso, menos series.</li>
+        <li>Cambiá el ejercicio por una variante que active distinto.</li>
+      </ul>
       <ul className="flex flex-col gap-1">
         {items.slice(0, 5).map((it) => (
           <li key={it.exercise_id}>

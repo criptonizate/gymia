@@ -4,14 +4,19 @@ import { EmptyState } from "@/components/empty-state";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { getProfile } from "@/lib/supabase/profile";
 import { getTodayContext } from "@/modules/workouts/queries";
+import { getTrainingDays } from "@/modules/progress/queries";
+import { StreakBadge } from "@/modules/progress/components/StreakBadge";
 import { StartButton } from "./start-button";
 import { DeloadCta } from "./deload-cta";
 
 export const instant = false;
 
 export default async function HoyPage() {
-  const profile = await getProfile();
-  const ctx = await getTodayContext();
+  const [profile, ctx, trainingDays] = await Promise.all([
+    getProfile(),
+    getTodayContext(),
+    getTrainingDays(90),
+  ]);
 
   const firstName = profile?.nombre?.split(" ")[0] ?? "";
 
@@ -77,6 +82,8 @@ export default async function HoyPage() {
         <p className="text-sm text-muted-foreground">{day.nombre}</p>
       </header>
 
+      <StreakBadge days={trainingDays} />
+
       <ul className="flex flex-col gap-2">
         {day.ejercicios.map((e) => {
           const lastSummary = summarizeLast(e);
@@ -102,8 +109,8 @@ export default async function HoyPage() {
                   </h3>
                   <p className="text-xs text-muted-foreground tabular-nums">
                     {e.exercise.tipo_registro === "tiempo"
-                      ? `${e.series}×${e.duracion_seg}s`
-                      : `${e.series}×${e.reps_min}-${e.reps_max}`}
+                      ? `${e.series} series × ${e.duracion_seg}s`
+                      : `${e.series} series × ${e.reps_min}-${e.reps_max} reps`}
                   </p>
                   {lastSummary && (
                     <p className="truncate text-xs text-muted-foreground">
@@ -145,5 +152,6 @@ function summarizeLast(e: {
   const peso = logs[0].peso_kg;
   const reps = logs.map((l) => l.reps).filter((x): x is number => x != null);
   if (!reps.length) return null;
-  return `${peso ?? "?"} kg × ${reps.join(", ")}`;
+  if (peso == null || peso === 0) return `${reps.join(", ")} reps`;
+  return `${peso} kg × ${reps.join(", ")}`;
 }

@@ -13,7 +13,10 @@ export default async function GenerarPage() {
           Armamos tu plan en 4 toques.
         </p>
       </header>
-      <GenerarWizard nivelInicial={profile?.nivel ?? "intermedio"} />
+      <GenerarWizard
+        nivelInicial={profile?.nivel ?? "intermedio"}
+        objetivoInicial={profile?.objetivo ?? "hipertrofia"}
+      />
     </main>
   );
 }

@@ -7,11 +7,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Minus,
+  Play,
   Plus,
   X,
 } from "lucide-react";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
-import { beep, vibrate } from "@/modules/workouts/components/beep";
+import {
+  beep,
+  unlockAudio,
+  vibrate,
+} from "@/modules/workouts/components/beep";
 import { fromDisplay, KG_TO_LB, toDisplay } from "@/lib/units";
 import { useUnit } from "@/lib/use-unit";
 import { weightStep } from "@/modules/workouts/progression";
@@ -28,6 +33,8 @@ type Props = {
   onExit: () => void;
   onIndexChange: (i: number) => void;
 };
+
+const DEFAULT_REST = 60;
 
 /**
  * Vista FOCUS: una sola serie por pantalla. Botones gigantes, poco texto,
@@ -53,26 +60,33 @@ export function FocusView({
   const total = ejercicios.length;
   const unit = useUnit();
 
-  // Último set previo (para precarga)
   const lastLogs = lastLogsByExercise[ex.exercise_id];
   const firstLast = lastLogs?.[0];
   const stepKg = weightStep(ex.exercise.equipment.slug);
+  const tipoRegistro = ex.exercise.tipo_registro;
+  const esTiempo = tipoRegistro === "tiempo";
+  const esPeso = tipoRegistro === "peso_reps";
 
-  // Serie actual = primer "hueco"
   const serieActual = currentSets.length + 1;
   const terminado = serieActual > ex.series;
 
-  const defaultPeso =
-    ex.peso_objetivo_kg ?? firstLast?.peso_kg ?? null;
-  const defaultReps =
-    ex.reps_max ?? ex.reps_min ?? firstLast?.reps ?? 10;
+  const defaultPeso = esPeso
+    ? ex.peso_objetivo_kg ?? firstLast?.peso_kg ?? null
+    : null;
+  const defaultReps = esTiempo
+    ? 0
+    : ex.reps_max ?? ex.reps_min ?? firstLast?.reps ?? 10;
+  const durObjetivo = ex.duracion_seg ?? firstLast?.duracion_seg ?? 30;
 
   const [peso, setPeso] = useState<number | null>(defaultPeso);
   const [reps, setReps] = useState<number>(defaultReps);
-  // Descanso corto por default; se puede estirar en vivo.
+  // Para tipo "tiempo": timer de ejecución del ejercicio.
+  const [holdSecs, setHoldSecs] = useState<number>(durObjetivo);
+  const [holdRunning, setHoldRunning] = useState(false);
   const [rest, setRest] = useState<number | null>(null);
 
-  // Al cambiar de ejercicio, resetear los sets locales y los defaults.
+  // Cambio de ejercicio: resetear defaults pero NO el descanso (que puede
+  // seguir corriendo mientras el user "espía" el próximo).
   useEffect(() => {
     onIndexChange(i);
     setCurrentSets(
@@ -80,14 +94,17 @@ export function FocusView({
         .filter((l) => l.routine_exercise_id === ejercicios[i]?.id)
         .sort((a, b) => a.numero_serie - b.numero_serie),
     );
-    // No reseteamos `rest`: el user puede querer ir viendo el próximo
-    // ejercicio mientras el timer sigue corriendo.
-    // Nuevo ejercicio: recalcular defaults
     const nextEx = ejercicios[i];
     if (!nextEx) return;
     const last = lastLogsByExercise[nextEx.exercise_id]?.[0];
-    setPeso(nextEx.peso_objetivo_kg ?? last?.peso_kg ?? null);
-    setReps(nextEx.reps_max ?? nextEx.reps_min ?? last?.reps ?? 10);
+    const nextEsPeso = nextEx.exercise.tipo_registro === "peso_reps";
+    const nextEsTiempo = nextEx.exercise.tipo_registro === "tiempo";
+    setPeso(nextEsPeso ? nextEx.peso_objetivo_kg ?? last?.peso_kg ?? null : null);
+    setReps(
+      nextEsTiempo ? 0 : nextEx.reps_max ?? nextEx.reps_min ?? last?.reps ?? 10,
+    );
+    setHoldSecs(nextEx.duracion_seg ?? last?.duracion_seg ?? 30);
+    setHoldRunning(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i]);
 
@@ -104,10 +121,31 @@ export function FocusView({
     return () => clearTimeout(t);
   }, [rest]);
 
-  async function marcarSerie() {
+  // Timer de ejecución (tipo "tiempo")
+  useEffect(() => {
+    if (!holdRunning) return;
+    if (holdSecs <= 0) {
+      beep(300, 1040);
+      vibrate([300, 150, 300]);
+      setHoldRunning(false);
+      marcarSerie(durObjetivo);
+      return;
+    }
+    const t = setTimeout(
+      () => setHoldSecs((s) => Math.max(0, s - 1)),
+      1000,
+    );
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdRunning, holdSecs]);
+
+  async function marcarSerie(duracionReal?: number) {
+    unlockAudio();
+    vibrate(20);
     const num = serieActual;
-    const planPeso = ex.peso_objetivo_kg;
-    const planReps = ex.reps_max ?? ex.reps_min ?? null;
+    const planPeso = esPeso ? ex.peso_objetivo_kg : null;
+    const planReps = esTiempo ? null : ex.reps_max ?? ex.reps_min ?? null;
+    const dur = esTiempo ? duracionReal ?? durObjetivo : null;
     const newLog: SetLog = {
       id: `tmp-${ex.id}-${num}-${Date.now()}`,
       session_id: sessionId,
@@ -118,16 +156,16 @@ export function FocusView({
       objetivo_reps: planReps,
       objetivo_peso_kg: planPeso,
       objetivo_seg: ex.duracion_seg,
-      peso_kg: peso,
-      reps,
-      duracion_seg: null,
+      peso_kg: esPeso ? peso : null,
+      reps: esTiempo ? null : reps,
+      duracion_seg: dur,
       rir: null,
       completada: true,
       created_at: new Date().toISOString(),
     };
     setCurrentSets((p) => [...p, newLog]);
-    // Arrancar descanso corto (30s default, user agrega +15s si quiere)
-    setRest(30);
+    setRest(ex.descanso_seg ?? DEFAULT_REST);
+    if (esTiempo) setHoldSecs(durObjetivo);
     await logSetOffline({
       sessionId,
       routineExerciseId: ex.id,
@@ -137,15 +175,17 @@ export function FocusView({
       objetivoReps: planReps,
       objetivoPesoKg: planPeso,
       objetivoSeg: ex.duracion_seg,
-      pesoKg: peso,
-      reps,
-      duracionSeg: null,
+      pesoKg: esPeso ? peso : null,
+      reps: esTiempo ? null : reps,
+      duracionSeg: dur,
       rir: null,
       completada: true,
     });
   }
 
   function siguiente() {
+    unlockAudio();
+    vibrate(20);
     if (i < total - 1) setI(i + 1);
     else {
       onExit();
@@ -153,24 +193,33 @@ export function FocusView({
     }
   }
 
-  const missed =
-    ex.reps_min != null && reps < ex.reps_min;
+  function handleExit() {
+    const haySetsSinSerie = currentSets.length > 0 && !terminado;
+    if (
+      haySetsSinSerie &&
+      !confirm("¿Salir del modo focus? La sesión queda guardada.")
+    ) {
+      return;
+    }
+    onExit();
+  }
+
+  const missed = !esTiempo && ex.reps_min != null && reps < ex.reps_min;
   const displayPeso = toDisplay(peso, unit);
 
   return (
     <div className="fixed inset-0 z-[80] flex flex-col bg-background">
-      {/* Top: nombre + close */}
       <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
             {i + 1}/{total} · Serie {Math.min(serieActual, ex.series)}/{ex.series}
           </span>
-          <h1 className="truncate text-base font-bold leading-tight">
+          <h1 className="truncate text-xl font-bold leading-tight">
             {ex.exercise.nombre}
           </h1>
         </div>
         <button
-          onClick={onExit}
+          onClick={handleExit}
           aria-label="Salir del modo focus"
           className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card"
         >
@@ -178,7 +227,35 @@ export function FocusView({
         </button>
       </header>
 
-      {/* Media */}
+      {rest != null && (
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[var(--primary-soft)] px-3 py-2">
+          <div className="flex min-w-0 flex-1 flex-col leading-none">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Descanso
+            </span>
+            <span className="text-5xl font-black tabular-nums text-primary">
+              {rest}
+              <span className="text-xl font-bold"> seg</span>
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              unlockAudio();
+              setRest((r) => (r ?? 0) + 15);
+            }}
+            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
+          >
+            +15 s
+          </button>
+          <button
+            onClick={() => setRest(null)}
+            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
+          >
+            Saltar
+          </button>
+        </div>
+      )}
+
       <div className="relative h-40 shrink-0">
         <ExerciseMedia
           mediaUrl={ex.exercise.media_url}
@@ -193,34 +270,6 @@ export function FocusView({
         />
       </div>
 
-      {/* Banner de descanso: se queda arriba mientras el user navega
-          entre ejercicios para ver qué viene después. */}
-      {rest != null && (
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[var(--primary-soft)] px-3 py-2">
-          <div className="flex min-w-0 flex-1 flex-col leading-none">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Descansá
-            </span>
-            <span className="text-3xl font-black tabular-nums text-primary">
-              {rest}s
-            </span>
-          </div>
-          <button
-            onClick={() => setRest((r) => (r ?? 0) + 15)}
-            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
-          >
-            +15 s
-          </button>
-          <button
-            onClick={() => setRest(null)}
-            className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold"
-          >
-            Saltar
-          </button>
-        </div>
-      )}
-
-      {/* Zona central grande: peso + reps */}
       {terminado ? (
         <section className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
           <Check className="h-20 w-20 text-primary" />
@@ -231,20 +280,68 @@ export function FocusView({
             {i < total - 1 ? "Próximo ejercicio" : "Finalizar sesión"}
           </BigBtn>
         </section>
+      ) : esTiempo ? (
+        <section className="flex flex-1 flex-col items-stretch justify-between gap-4 p-4">
+          {firstLast?.duracion_seg && (
+            <p className="text-center text-sm text-muted-foreground">
+              Última vez: {firstLast.duracion_seg}s
+            </p>
+          )}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <span className="text-sm uppercase tracking-wider text-muted-foreground">
+              Objetivo {durObjetivo}s
+            </span>
+            <span
+              className={`text-[140px] font-black leading-none tabular-nums ${
+                holdRunning ? "text-primary" : ""
+              }`}
+            >
+              {holdSecs}
+            </span>
+          </div>
+          {holdRunning ? (
+            <button
+              onClick={() => {
+                vibrate(30);
+                setHoldRunning(false);
+              }}
+              className="flex min-h-20 w-full items-center justify-center gap-3 rounded-2xl border border-border bg-card text-2xl font-black"
+            >
+              Pausar
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                unlockAudio();
+                vibrate(30);
+                if (holdSecs <= 0) setHoldSecs(durObjetivo);
+                setHoldRunning(true);
+              }}
+              className="flex min-h-20 w-full items-center justify-center gap-3 rounded-2xl bg-primary text-2xl font-black text-primary-foreground"
+            >
+              <Play className="h-7 w-7" />
+              Empezar serie {serieActual}
+            </button>
+          )}
+        </section>
       ) : (
         <section className="flex flex-1 flex-col items-stretch justify-between gap-4 p-4">
           {firstLast && (
-            <p className="text-center text-xs text-muted-foreground">
-              Última vez: {firstLast.peso_kg ?? "?"} kg × {firstLast.reps ?? "?"}
+            <p className="text-center text-sm text-muted-foreground">
+              Última vez:{" "}
+              {esPeso
+                ? `${firstLast.peso_kg ?? "?"} kg × ${firstLast.reps ?? "?"}`
+                : `${firstLast.reps ?? "?"} reps`}
             </p>
           )}
 
-          {ex.exercise.tipo_registro === "peso_reps" && (
+          {esPeso && (
             <Stepper
               label={unit}
               value={displayPeso ?? 0}
               step={unit === "lb" ? Math.round(stepKg * KG_TO_LB) : stepKg}
               onChange={(v) => setPeso(fromDisplay(v, unit))}
+              allowEdit
             />
           )}
 
@@ -254,10 +351,11 @@ export function FocusView({
             step={1}
             onChange={setReps}
             tone={missed ? "warning" : "normal"}
+            allowEdit
           />
 
           <button
-            onClick={marcarSerie}
+            onClick={() => marcarSerie()}
             className="flex min-h-20 w-full items-center justify-center gap-3 rounded-2xl bg-primary text-2xl font-black text-primary-foreground"
           >
             <Check className="h-7 w-7" />
@@ -266,23 +364,30 @@ export function FocusView({
         </section>
       )}
 
-      {/* Nav inferior */}
       <nav className="flex items-center justify-between gap-2 border-t border-border p-3">
         <BigBtn
           onClick={() => {
-            if (i > 0) setI(i - 1);
+            if (i > 0) {
+              vibrate(10);
+              setI(i - 1);
+            }
           }}
           disabled={i === 0}
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5" />
+          <span className="text-sm">Anterior</span>
         </BigBtn>
         <BigBtn
           onClick={() => {
-            if (i < total - 1) setI(i + 1);
+            if (i < total - 1) {
+              vibrate(10);
+              setI(i + 1);
+            }
           }}
           disabled={i >= total - 1}
         >
-          <ChevronRight className="h-6 w-6" />
+          <span className="text-sm">Siguiente</span>
+          <ChevronRight className="h-5 w-5" />
         </BigBtn>
       </nav>
     </div>
@@ -295,19 +400,40 @@ function Stepper({
   step,
   onChange,
   tone = "normal",
+  allowEdit = false,
 }: {
   label: string;
   value: number;
   step: number;
   onChange: (v: number) => void;
   tone?: "normal" | "warning";
+  allowEdit?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(Number.isInteger(value) ? String(value) : value.toFixed(1));
+      setTimeout(() => inputRef.current?.select(), 0);
+    }
+  }, [editing, value]);
+
+  function commit() {
+    const n = parseFloat(draft.replace(",", "."));
+    if (Number.isFinite(n) && n >= 0) onChange(n);
+    setEditing(false);
+  }
+
   const cls =
     tone === "warning"
       ? "border-warning bg-[var(--warning-soft)]"
       : "border-border bg-card";
   return (
-    <div className={`flex items-center justify-between rounded-2xl border p-3 ${cls}`}>
+    <div
+      className={`flex items-center justify-between rounded-2xl border p-3 ${cls}`}
+    >
       <button
         onClick={() => onChange(Math.max(0, value - step))}
         aria-label={`Menos ${step} ${label}`}
@@ -315,14 +441,36 @@ function Stepper({
       >
         <Minus className="h-7 w-7" />
       </button>
-      <div className="flex min-w-0 flex-1 flex-col items-center">
-        <span className="text-5xl font-black tabular-nums leading-none">
-          {Number.isInteger(value) ? value : value.toFixed(1)}
-        </span>
+      <button
+        type="button"
+        onClick={() => allowEdit && setEditing(true)}
+        className="flex min-w-0 flex-1 flex-col items-center"
+        disabled={!allowEdit}
+      >
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="decimal"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") setEditing(false);
+            }}
+            className="w-full bg-transparent text-center text-5xl font-black tabular-nums leading-none outline-none"
+          />
+        ) : (
+          <span className="text-5xl font-black tabular-nums leading-none">
+            {Number.isInteger(value) ? value : value.toFixed(1)}
+          </span>
+        )}
         <span className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
           {label}
+          {allowEdit && !editing && " · tocá para editar"}
         </span>
-      </div>
+      </button>
       <button
         onClick={() => onChange(value + step)}
         aria-label={`Más ${step} ${label}`}

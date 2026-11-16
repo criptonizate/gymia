@@ -38,8 +38,15 @@ export function Heatmap({ days }: { days: TrainingDay[] }) {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
-      <div className="mb-2 text-xs text-muted-foreground">
-        Días entrenados
+      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+        <span>Días entrenados</span>
+        <span className="flex items-center gap-1">
+          <span>menos</span>
+          <span className="h-3 w-3 rounded-sm bg-muted" />
+          <span className="h-3 w-3 rounded-sm bg-[var(--primary-soft)]" />
+          <span className="h-3 w-3 rounded-sm bg-primary" />
+          <span>más</span>
+        </span>
       </div>
       <div
         className="grid gap-1"

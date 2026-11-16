@@ -80,7 +80,7 @@ const OBJETIVOS: Pick<Objetivo>[] = [
     l: "Acondicionamiento",
     icon: Heart,
     tag: "Salud y estar en forma",
-    chips: ["Variado", "Sostenible"],
+    chips: ["Variado", "Sostenible", "Recomendado si recién empezás"],
   },
 ];
 
@@ -125,13 +125,15 @@ const PRESETS: Preset[] = [
 
 export function GenerarWizard({
   nivelInicial,
+  objetivoInicial,
 }: {
   nivelInicial: Nivel;
+  objetivoInicial: Objetivo;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [cfg, setCfg] = useState<Config>({
-    objetivo: "hipertrofia",
+    objetivo: objetivoInicial,
     entorno: "gimnasio",
     nivel: nivelInicial,
   });

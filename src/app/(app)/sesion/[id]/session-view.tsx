@@ -176,12 +176,10 @@ export function SessionView({
     if (Math.abs(dx) < 60) return;
     // Horizontal real: X tiene que dominar sobre Y
     if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (dx < 0 && i < ejercicios.length - 1) {
-      setI(i + 1); setRest(null); setPresetSecs(null);
-    }
-    if (dx > 0 && i > 0) {
-      setI(i - 1); setRest(null); setPresetSecs(null);
-    }
+    // Swipe entre ejercicios: no cortamos los timers, el user puede
+    // querer ir viendo el próximo mientras descansa.
+    if (dx < 0 && i < ejercicios.length - 1) setI(i + 1);
+    if (dx > 0 && i > 0) setI(i - 1);
   }
 
   // Optimistic + server save
@@ -676,6 +674,7 @@ function SummaryOverlay({
   onFinish: (notas?: string) => void;
 }) {
   const [notas, setNotas] = useState("");
+  const [shareHint, setShareHint] = useState<string | null>(null);
   const mins = Math.max(1, Math.round((Date.now() - new Date(startedAt).getTime()) / 60000));
   const seriesCompletas = logs.filter((l) => l.completada).length;
   const seriesPlanificadas = ejercicios.reduce((a, e) => a + e.series, 0);
@@ -734,17 +733,26 @@ function SummaryOverlay({
           className="min-h-20 rounded-xl border border-border bg-card p-3 text-sm outline-none focus:border-primary"
         />
       </div>
+      {shareHint && (
+        <p className="mt-3 rounded-xl border border-border bg-card px-3 py-2 text-center text-xs text-muted-foreground">
+          {shareHint}
+        </p>
+      )}
       <div className="mt-4 flex gap-2">
         <button
-          onClick={() =>
-            shareSummary({
+          onClick={async () => {
+            const hint = await shareSummary({
               duracionMin: mins,
               seriesCompletas,
               seriesPlanificadas,
               volumen,
               records,
-            })
-          }
+            });
+            if (hint) {
+              setShareHint(hint);
+              setTimeout(() => setShareHint(null), 2500);
+            }
+          }}
           className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
         >
           Compartir
@@ -766,7 +774,7 @@ async function shareSummary(s: {
   seriesPlanificadas: number;
   volumen: number;
   records: string[];
-}) {
+}): Promise<string | null> {
   const lines = [
     "GYMIA · resumen de hoy",
     `⏱️ ${s.duracionMin} min`,
@@ -779,16 +787,16 @@ async function shareSummary(s: {
   if (nav.share) {
     try {
       await nav.share({ text });
-      return;
+      return null;
     } catch {
-      // cancelado
+      // cancelado o fallback
     }
   }
   try {
     await navigator.clipboard.writeText(text);
-    alert("Resumen copiado al portapapeles");
+    return "Resumen copiado al portapapeles";
   } catch {
-    // ignore
+    return "No pude copiar el resumen";
   }
 }
 

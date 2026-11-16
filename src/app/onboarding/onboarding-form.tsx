@@ -62,6 +62,9 @@ export function OnboardingForm({ nombreInicial }: { nombreInicial: string }) {
           required
           className="min-h-12 rounded-xl border border-border bg-card px-4 text-base outline-none focus:border-primary"
         />
+        <p className="text-xs text-muted-foreground">
+          Lo usamos sólo para saludarte en la app.
+        </p>
       </section>
 
       <section className="flex flex-col gap-3">

@@ -16,6 +16,8 @@ import { RecentSessionsCard } from "@/modules/progress/components/RecentSessions
 import { WeekCompareCard } from "@/modules/progress/components/WeekCompareCard";
 import { StalledCard } from "@/modules/progress/components/StalledCard";
 import { PresetCountdownToggle } from "@/components/preset-countdown-toggle";
+import { ExportCard } from "./export-card";
+import { GlossaryCard } from "./glossary-card";
 import {
   getBodyWeights,
   getExerciseRecords,
@@ -98,6 +100,14 @@ export default async function CuentaPage() {
 
       {profile && <ProfileEditor profile={profile} />}
       {profile && <ProfileExtendedEditor profile={profile} />}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="px-2 text-sm font-semibold text-muted-foreground">
+          Herramientas
+        </h2>
+        <GlossaryCard />
+        <ExportCard />
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="px-2 text-sm font-semibold text-muted-foreground">

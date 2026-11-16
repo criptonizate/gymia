@@ -1,6 +1,8 @@
 // Mini helper para beep/vibración sin dependencias.
 
 let ctx: AudioContext | null = null;
+let unlocked = false;
+
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (ctx) return ctx;
@@ -18,9 +20,26 @@ function getCtx(): AudioContext | null {
   }
 }
 
+/** Debe llamarse dentro de un gesto del usuario (tap). iOS/Safari suspenden
+ * el AudioContext hasta que se resume con interacción real. Idempotente. */
+export function unlockAudio(): void {
+  if (unlocked) return;
+  const c = getCtx();
+  if (!c) return;
+  const done = () => {
+    unlocked = true;
+  };
+  if (c.state === "suspended") {
+    c.resume().then(done).catch(() => {});
+  } else {
+    done();
+  }
+}
+
 export function beep(ms = 150, freq = 880): void {
   const c = getCtx();
   if (!c) return;
+  if (c.state === "suspended") c.resume().catch(() => {});
   try {
     const osc = c.createOscillator();
     const gain = c.createGain();

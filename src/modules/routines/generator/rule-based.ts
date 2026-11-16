@@ -427,7 +427,7 @@ export const RuleBasedGenerator: RoutineGenerator = {
         dias.push({
           semana: w + 1,
           orden: d + 1,
-          nombre: `Semana ${w + 1} · Día ${String.fromCharCode(65 + d)} – ${template.split_label}`,
+          nombre: `Semana ${w + 1} · Día ${d + 1} – ${template.split_label}`,
           split_label: template.split_label,
           ejercicios: picked,
         });
@@ -456,6 +456,9 @@ function nombreRutina(cfg: GeneratorConfig, split: string): string {
     hipertrofia: "Hipertrofia",
     fuerza: "Fuerza",
     general: "Acondicionamiento",
+    perdida_grasa: "Pérdida de grasa",
+    rendimiento_deportivo: "Rendimiento deportivo",
   };
-  return `${objMap[cfg.objetivo]} · ${cfg.diasPorSemana}d/sem · ${cfg.semanas} sem · ${split}`;
+  const obj = objMap[cfg.objetivo] ?? "Rutina";
+  return `${obj} · ${cfg.diasPorSemana}d/sem · ${cfg.semanas} sem · ${split}`;
 }

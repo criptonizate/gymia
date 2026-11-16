@@ -9,6 +9,7 @@ import {
   Info,
   Repeat,
   Check,
+  Flag,
 } from "lucide-react";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { TechniqueSheet } from "@/modules/exercises/components/TechniqueSheet";
@@ -348,6 +349,14 @@ export function SessionView({
             <Repeat className="h-3.5 w-3.5 text-primary" />
             <span className="hidden sm:inline">Ocupada</span>
           </button>
+          <button
+            onClick={() => setSummaryOpen(true)}
+            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-2 text-xs font-medium sm:px-3"
+            aria-label="Terminar entrenamiento"
+          >
+            <Flag className="h-3.5 w-3.5 text-primary" />
+            <span className="hidden sm:inline">Terminar</span>
+          </button>
         </div>
       </header>
 
@@ -533,11 +542,31 @@ export function SessionView({
         open={busyOpen}
         onClose={() => setBusyOpen(false)}
         routineExerciseId={current.id}
-        exerciseId={current.exercise_id}
-        muscleGroupSlug={current.exercise.muscle_group.slug}
-        patron={current.exercise.patron}
-        tipo={current.exercise.tipo}
-        equipmentSlug={current.exercise.equipment.slug}
+        exerciseId={activeExerciseId}
+        muscleGroupSlug={activeExercise.muscle_group.slug}
+        patron={activeExercise.patron}
+        tipo={activeExercise.tipo}
+        equipmentSlug={activeEquipmentSlug}
+        hasActiveOverride={isSub}
+        onRevertOverride={() => {
+          setOverrides((prev) => {
+            const next = { ...prev };
+            delete next[current.id];
+            return next;
+          });
+          setBusyOpen(false);
+        }}
+        onUseAlwaysDone={() => {
+          // El server tiene el ejercicio nuevo. Limpiamos el override local
+          // para que el próximo re-fetch no vuelva a marcarlo como sustituto.
+          setOverrides((prev) => {
+            const next = { ...prev };
+            delete next[current.id];
+            return next;
+          });
+          setBusyOpen(false);
+          router.refresh();
+        }}
         onUseOnce={(ex) => {
           setOverrides((prev) => ({
             ...prev,
@@ -594,6 +623,8 @@ export function SessionView({
             });
           }}
           onSaveError={setSaveError}
+          overrides={overrides}
+          onRequestFinish={() => setSummaryOpen(true)}
         />
       )}
 

@@ -142,7 +142,9 @@ export function SetRow({
           label={unit}
           value={toDisplay(peso, unit)}
           onChange={(v) => {
-            const kg = v == null ? null : fromDisplay(v, unit);
+            // Peso no puede ser negativo (Zod lo rechaza y se pierde el log).
+            const clamped = v == null ? null : Math.max(0, v);
+            const kg = clamped == null ? null : fromDisplay(clamped, unit);
             setPeso(kg);
             commit({ peso_kg: kg, reps, rir, completada: done });
           }}
@@ -154,8 +156,11 @@ export function SetRow({
         label="reps"
         value={reps}
         onChange={(v) => {
-          setReps(v);
-          commit({ peso_kg: peso, reps: v, rir, completada: done });
+          // Reps siempre entero no negativo. Si el user tipea "8.5", redondeamos
+          // en vez de dejar que Zod lo rechace y Perd el set.
+          const clean = v == null ? null : Math.max(0, Math.round(v));
+          setReps(clean);
+          commit({ peso_kg: peso, reps: clean, rir, completada: done });
         }}
         step={1}
       />

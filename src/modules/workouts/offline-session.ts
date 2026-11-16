@@ -8,7 +8,7 @@
 import type { RoutineExerciseRow } from "@/modules/routines/queries";
 import type { ExerciseWithRelations } from "@/modules/exercises/types";
 import type { SetLog } from "@/modules/workouts/queries";
-import { createClient } from "@/lib/supabase/client";
+import { getOfflineUserId } from "@/lib/offline-user";
 import { finishSession, saveSessionNotas } from "@/modules/workouts/actions";
 
 const DB_NAME = "gymia-offline";
@@ -81,16 +81,7 @@ function asPromise<T>(req: IDBRequest<T>): Promise<T> {
 }
 
 async function currentUserId(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
+  return getOfflineUserId();
 }
 
 // --------------------------- Session cache ------------------------------

@@ -13,6 +13,16 @@ type Props = {
 export function RestTimer({ seconds, onDone, onDismiss }: Props) {
   const [remaining, setRemaining] = useState(seconds);
   const firedRef = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  // Si el padre dispara un rest nuevo con el componente ya montado,
+  // reseteamos. También limpiamos el timeout de 300 ms al desmontar para
+  // no llamar a onDone después de que la vista cambió.
+  useEffect(() => {
+    setRemaining(seconds);
+    firedRef.current = false;
+  }, [seconds]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -26,9 +36,10 @@ export function RestTimer({ seconds, onDone, onDismiss }: Props) {
       firedRef.current = true;
       beep(200, 880);
       vibrate([200, 100, 200]);
-      setTimeout(onDone, 300);
+      const t = setTimeout(() => onDoneRef.current(), 300);
+      return () => clearTimeout(t);
     }
-  }, [remaining, onDone]);
+  }, [remaining]);
 
   const pct = Math.max(0, Math.min(1, remaining / Math.max(1, seconds)));
 

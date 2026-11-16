@@ -4,7 +4,7 @@
 
 import type { LogSetInput } from "./actions";
 import { logSet } from "./actions";
-import { createClient } from "@/lib/supabase/client";
+import { getOfflineUserId } from "@/lib/offline-user";
 
 const DB_NAME = "gymia-offline";
 const DB_VERSION = 2;
@@ -101,16 +101,7 @@ export async function clearOfflineQueue(): Promise<void> {
 }
 
 async function currentUserId(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
+  return getOfflineUserId();
 }
 
 let drainingPromise: Promise<void> | null = null;

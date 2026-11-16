@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { beep } from "./beep";
 
 type Props = { seconds: number; onDone: () => void; onCancel: () => void };
 
 export function PresetCountdown({ seconds, onDone, onCancel }: Props) {
   const [n, setN] = useState(seconds);
+  // Ref para no reiniciar el effect ni rebeeppear cuando el padre se
+  // re-renderiza con un onDone inline nuevo.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     if (n <= 0) {
       beep(220, 1000);
-      onDone();
+      onDoneRef.current();
       return;
     }
     beep(60, 660);
     const t = setTimeout(() => setN((x) => x - 1), 1000);
     return () => clearTimeout(t);
-  }, [n, onDone]);
+  }, [n]);
 
   return (
     <div

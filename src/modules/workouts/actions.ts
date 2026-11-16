@@ -226,12 +226,34 @@ export async function replaceInRoutine(
     .select("tipo_registro")
     .eq("id", newExerciseId)
     .maybeSingle();
-  const patch: Record<string, unknown> = { exercise_id: newExerciseId };
+  // El objetivo de peso y RIR pertenecían al ejercicio viejo. Nulearlos
+  // evita que "3×8-12 obj 100kg" quede arrastrado a una máquina con otro
+  // rango de carga. La sugerencia de progresión los recalculará.
+  const patch: Record<string, unknown> = {
+    exercise_id: newExerciseId,
+    peso_objetivo_kg: null,
+    rir_objetivo: null,
+  };
   if (ex?.tipo_registro === "tiempo") {
+    // Tipo tiempo: necesita duracion_seg, pero no rango de reps.
     patch.reps_min = null;
     patch.reps_max = null;
+    // Si el ejercicio viejo era de reps, duracion_seg estaba en null — poner
+    // un default sensato.
+    patch.duracion_seg = 30;
   } else {
     patch.duracion_seg = null;
+    // Si el viejo era de tiempo, reps_min/reps_max estaban en null — rango
+    // genérico que la progresión va a ajustar.
+    const { data: current } = await supabase
+      .from("routine_exercises")
+      .select("reps_min, reps_max")
+      .eq("id", routineExerciseId)
+      .maybeSingle();
+    if (current?.reps_min == null || current?.reps_max == null) {
+      patch.reps_min = 8;
+      patch.reps_max = 12;
+    }
   }
   const { error } = await supabase
     .from("routine_exercises")
@@ -239,6 +261,7 @@ export async function replaceInRoutine(
     .eq("id", routineExerciseId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/rutina");
+  revalidatePath("/hoy");
   return { ok: true, data: undefined };
 }
 

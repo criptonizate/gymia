@@ -51,6 +51,21 @@ type Props = {
    * salió mal (misma gramática que SessionView).
    */
   onSaveError?: (error: string | null) => void;
+  /**
+   * Sustitutos activos por routine_exercise_id. Si el user cambió de máquina
+   * ("Ocupada"), focus debe usar el ejercicio activo y marcar es_sustituto.
+   */
+  overrides?: Record<
+    string,
+    {
+      exerciseId: string;
+      tipo_registro: "peso_reps" | "reps" | "tiempo";
+      equipment_slug: string;
+      nombre: string;
+    }
+  >;
+  /** Pide al padre abrir el resumen y cerrar la sesión correctamente. */
+  onRequestFinish?: () => void;
 };
 
 const DEFAULT_REST = 60;
@@ -69,6 +84,8 @@ export function FocusView({
   onIndexChange,
   onLogCommitted,
   onSaveError,
+  overrides,
+  onRequestFinish,
 }: Props) {
   const router = useRouter();
   const [i, setI] = useState(initialIndex);
@@ -81,10 +98,18 @@ export function FocusView({
   const total = ejercicios.length;
   const unit = useUnit();
 
-  const lastLogs = lastLogsByExercise[ex.exercise_id];
+  // Si hay un sustituto activo para este routine_exercise, los datos
+  // (exercise_id efectivo, tipo_registro, equipment para stepKg) salen
+  // de ese override, no del original.
+  const override = overrides?.[ex?.id ?? ""];
+  const activeExerciseId = override?.exerciseId ?? ex?.exercise_id;
+  const activeEquipmentSlug = override?.equipment_slug ?? ex?.exercise.equipment.slug;
+  const tipoRegistro = override?.tipo_registro ?? ex?.exercise.tipo_registro;
+  const isSub = !!override;
+
+  const lastLogs = activeExerciseId ? lastLogsByExercise[activeExerciseId] : undefined;
   const firstLast = lastLogs?.[0];
-  const stepKg = weightStep(ex.exercise.equipment.slug);
-  const tipoRegistro = ex.exercise.tipo_registro;
+  const stepKg = weightStep(activeEquipmentSlug ?? "barra");
   const esTiempo = tipoRegistro === "tiempo";
   const esPeso = tipoRegistro === "peso_reps";
 
@@ -150,9 +175,12 @@ export function FocusView({
     );
     const nextEx = ejercicios[i];
     if (!nextEx) return;
-    const last = lastLogsByExercise[nextEx.exercise_id]?.[0];
-    const nextEsPeso = nextEx.exercise.tipo_registro === "peso_reps";
-    const nextEsTiempo = nextEx.exercise.tipo_registro === "tiempo";
+    const nextOverride = overrides?.[nextEx.id];
+    const nextExerciseId = nextOverride?.exerciseId ?? nextEx.exercise_id;
+    const nextTipo = nextOverride?.tipo_registro ?? nextEx.exercise.tipo_registro;
+    const last = lastLogsByExercise[nextExerciseId]?.[0];
+    const nextEsPeso = nextTipo === "peso_reps";
+    const nextEsTiempo = nextTipo === "tiempo";
     setPeso(nextEsPeso ? nextEx.peso_objetivo_kg ?? last?.peso_kg ?? null : null);
     setReps(
       nextEsTiempo ? 0 : nextEx.reps_max ?? nextEx.reps_min ?? last?.reps ?? 10,
@@ -206,8 +234,8 @@ export function FocusView({
       id: `tmp-${ex.id}-${num}-${Date.now()}`,
       session_id: sessionId,
       routine_exercise_id: ex.id,
-      exercise_id: ex.exercise_id,
-      es_sustituto: false,
+      exercise_id: activeExerciseId ?? ex.exercise_id,
+      es_sustituto: isSub,
       numero_serie: num,
       objetivo_reps: planReps,
       objetivo_peso_kg: planPeso,
@@ -227,8 +255,8 @@ export function FocusView({
     const res = await logSetOffline({
       sessionId,
       routineExerciseId: ex.id,
-      exerciseId: ex.exercise_id,
-      esSustituto: false,
+      exerciseId: activeExerciseId ?? ex.exercise_id,
+      esSustituto: isSub,
       numeroSerie: num,
       objetivoReps: planReps,
       objetivoPesoKg: planPeso,
@@ -246,8 +274,17 @@ export function FocusView({
   function siguiente() {
     unlockAudio();
     vibrate(20);
-    if (i < total - 1) setI(i + 1);
-    else {
+    if (i < total - 1) {
+      setI(i + 1);
+      return;
+    }
+    // Último ejercicio: salimos de focus y le pedimos al padre que abra el
+    // resumen (para que llame a finishSession). Si no hay callback, caemos
+    // al comportamiento anterior.
+    if (onRequestFinish) {
+      onExit();
+      onRequestFinish();
+    } else {
       onExit();
       router.push("/hoy");
     }
@@ -275,7 +312,12 @@ export function FocusView({
             {i + 1}/{total} · Serie {Math.min(serieActual, ex.series)}/{ex.series}
           </span>
           <h1 className="truncate text-xl font-bold leading-tight">
-            {ex.exercise.nombre}
+            {override?.nombre ?? ex.exercise.nombre}
+            {isSub && (
+              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 align-middle text-[10px] font-medium text-primary-foreground">
+                Sustituto
+              </span>
+            )}
           </h1>
         </div>
         <div className="order-1 flex flex-none items-center gap-1 sm:order-2">
@@ -558,7 +600,11 @@ function Stepper({
 
   function commit() {
     const n = parseFloat(draft.replace(",", "."));
-    if (Number.isFinite(n) && n >= 0) onChange(n);
+    if (Number.isFinite(n) && n >= 0) {
+      // Si el stepper es entero (reps, segundos) redondeamos para no perder
+      // el log contra la validación Zod (int()).
+      onChange(step >= 1 ? Math.round(n) : n);
+    }
     setEditing(false);
   }
 

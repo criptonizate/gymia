@@ -97,7 +97,11 @@ function sumTarget(cur: CurrentTarget): number {
 }
 
 function sumDone(results: SetResult[]): number {
-  return results.reduce((acc, r) => acc + (r.reps ?? 0), 0);
+  // Sólo contamos series realmente marcadas como completadas. Un número
+  // tipeado en el input pero sin el ✓ no es una serie hecha.
+  return results
+    .filter((r) => r.completada)
+    .reduce((acc, r) => acc + (r.reps ?? 0), 0);
 }
 
 // --------------------------- Análisis ------------------------------------
@@ -134,10 +138,12 @@ export function analyze(
   const totalHecho = sumDone(results);
   const faltante = Math.max(0, totalObjetivo - totalHecho);
   const faltanteRatio = totalObjetivo > 0 ? faltante / totalObjetivo : 0;
+  // "Superé" requiere TODAS las series marcadas con reps >= tope.
+  const completadas = results.filter((r) => r.completada);
   const allAtOrAboveTope =
     topeReps > 0 &&
-    results.length === target.series &&
-    results.every((r) => (r.reps ?? 0) >= topeReps);
+    completadas.length === target.series &&
+    completadas.every((r) => (r.reps ?? 0) >= topeReps);
 
   return {
     supero: allAtOrAboveTope,
@@ -158,7 +164,11 @@ export function suggestOnNoLlegar(
 ): { bajarPeso: Suggestion; bajarReps: Suggestion; igual: Suggestion } {
   const step = weightStep(target.equipment_slug);
   const curPeso = target.peso_objetivo_kg ?? 0;
-  const nuevoPeso = Math.max(0, round(curPeso - step, step));
+  // Sólo sugerimos bajar peso si ya había un objetivo >0. Para ejercicios
+  // de peso corporal o sin peso objetivo "bajar a 0 kg" no tiene sentido.
+  const nuevoPeso = curPeso > 0
+    ? Math.max(0, round(curPeso - step, step))
+    : 0;
   const curRepsMin = target.reps_min ?? 8;
   const curRepsMax = target.reps_max ?? 12;
   const nuevaRepsMax = Math.max(1, curRepsMax - 2);
@@ -191,6 +201,18 @@ export function suggestOnNoLlegar(
 export function suggestOnSuperar(target: CurrentTarget): Suggestion {
   const step = weightStep(target.equipment_slug);
   const curPeso = target.peso_objetivo_kg ?? 0;
+  // Sin peso objetivo (peso corporal, bandas), no podemos "subir el peso"
+  // mecánicamente. Sugerimos subir el rango de reps en su lugar.
+  if (curPeso <= 0) {
+    const nuevaRepsMin = (target.reps_min ?? 8) + 1;
+    const nuevaRepsMax = (target.reps_max ?? 12) + 1;
+    return {
+      kind: "subir_reps",
+      nueva_reps_min: nuevaRepsMin,
+      nueva_reps_max: nuevaRepsMax,
+      descripcion: `Subí el rango a ${nuevaRepsMin}-${nuevaRepsMax} reps la próxima.`,
+    };
+  }
   const nuevoPeso = round(curPeso + step, step);
   return {
     kind: "subir_peso",

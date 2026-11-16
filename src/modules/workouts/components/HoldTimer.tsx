@@ -20,6 +20,8 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const beep5Fired = useRef(false);
   const beepEndFired = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   // Wake Lock
   useEffect(() => {
@@ -74,10 +76,12 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
       beep(300, 880);
       vibrate([200, 100, 200]);
       setPhase("done");
-      // auto-cerrar y reportar logro completo
-      setTimeout(() => onComplete(targetSeconds, true), 400);
+      // auto-cerrar y reportar logro completo; cancelamos el timeout si
+      // el componente se desmonta antes de los 400 ms.
+      const t = setTimeout(() => onCompleteRef.current(targetSeconds, true), 400);
+      return () => clearTimeout(t);
     }
-  }, [elapsed, targetSeconds, phase, onComplete]);
+  }, [elapsed, targetSeconds, phase]);
 
   const pct = Math.min(1, elapsed / Math.max(1, targetSeconds));
 

@@ -18,6 +18,18 @@ type Props = {
   equipmentSlug: string;
   /** Usar sólo esta sesión → aplicar como sustituto. */
   onUseOnce: (newExercise: ExerciseWithRelations) => void;
+  /**
+   * Usar siempre → la rutina ya se persistió con el nuevo ejercicio; el
+   * padre debe refrescar su data (router.refresh) en vez de aplicar un
+   * override local.
+   */
+  onUseAlwaysDone?: () => void;
+  /**
+   * Si hay un sustituto activo para esta sesión, mostramos un botón
+   * "Volver al original". El padre limpia su override.
+   */
+  hasActiveOverride?: boolean;
+  onRevertOverride?: () => void;
 };
 
 export function BusyMachineSheet({
@@ -30,6 +42,9 @@ export function BusyMachineSheet({
   tipo,
   equipmentSlug,
   onUseOnce,
+  onUseAlwaysDone,
+  hasActiveOverride,
+  onRevertOverride,
 }: Props) {
   const [opts, setOpts] = useState<ExerciseWithRelations[] | null>(null);
   const [showMore, setShowMore] = useState(false);
@@ -55,6 +70,14 @@ export function BusyMachineSheet({
         <p className="text-sm text-muted-foreground">
           Mismas series/reps. Mismo grupo muscular y patrón, otro equipo.
         </p>
+        {hasActiveOverride && onRevertOverride && (
+          <button
+            onClick={onRevertOverride}
+            className="min-h-10 rounded-xl border border-border bg-card text-sm font-medium transition-transform duration-150 active:scale-[0.98]"
+          >
+            Volver al ejercicio original
+          </button>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         {!opts && <p className="text-sm text-muted-foreground">Cargando…</p>}
 
@@ -75,7 +98,12 @@ export function BusyMachineSheet({
                 start(async () => {
                   const r = await replaceInRoutine(routineExerciseId, e.id);
                   if (r.ok) {
-                    onUseOnce(e);
+                    // No marcamos override local: la rutina cambió del lado
+                    // del server, pedimos al padre que refresque y los
+                    // próximos sets ya salen con el ejercicio nuevo y sin
+                    // es_sustituto.
+                    if (onUseAlwaysDone) onUseAlwaysDone();
+                    else onUseOnce(e);
                   } else setError(r.error);
                 })
               }
@@ -104,7 +132,8 @@ export function BusyMachineSheet({
                   start(async () => {
                     const r = await replaceInRoutine(routineExerciseId, e.id);
                     if (r.ok) {
-                      onUseOnce(e);
+                      if (onUseAlwaysDone) onUseAlwaysDone();
+                      else onUseOnce(e);
                     } else setError(r.error);
                   })
                 }

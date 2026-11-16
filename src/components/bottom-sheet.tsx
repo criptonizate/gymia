@@ -81,9 +81,9 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
         aria-label={title ? undefined : "Panel"}
         tabIndex={-1}
         style={maxH ? { maxHeight: `${maxH}px` } : undefined}
-        className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-popover text-popover-foreground shadow-xl animate-in slide-in-from-bottom duration-200 outline-none motion-reduce:animate-none max-sm:landscape:max-h-[100dvh] max-sm:landscape:rounded-t-none md:max-h-[85vh] md:rounded-3xl md:border"
+        className="glass-strong relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl text-popover-foreground shadow-2xl animate-in slide-in-from-bottom duration-200 outline-none motion-reduce:animate-none max-sm:landscape:max-h-[100dvh] max-sm:landscape:rounded-t-none md:max-h-[85vh] md:rounded-3xl"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-center rounded-t-3xl border-b border-border bg-popover p-4 max-sm:landscape:rounded-t-none">
+        <div className="sticky top-0 z-10 flex items-center justify-center rounded-t-3xl border-b border-[color-mix(in_oklab,var(--border)_50%,transparent)] p-4 max-sm:landscape:rounded-t-none">
           <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-border md:hidden" />
           {title && (
             <h2 id={titleId} className="mt-1 truncate pr-8 text-base font-semibold">{title}</h2>

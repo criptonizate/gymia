@@ -5,60 +5,60 @@
 @custom-variant light (&:where(.light, .light *));
 
 :root {
-  --background: #0a0a0b;
-  --foreground: #f2f4f7;
-  --card: #16181c;
-  --card-foreground: #f2f4f7;
-  --popover: #1f2228;
-  --popover-foreground: #f2f4f7;
-  --primary: #38bdf8;
-  --primary-foreground: #0a0a0b;
-  --primary-strong: #0ea5e9;
-  --primary-soft: rgba(56, 189, 248, 0.15);
-  --primary-light: #7dd3fc;
-  --secondary: #1f2228;
-  --secondary-foreground: #f2f4f7;
-  --muted: #1f2228;
-  --muted-foreground: #9ba3af;
-  --accent: #1f2228;
-  --accent-foreground: #f2f4f7;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #141416;
+  --card-foreground: #fafafa;
+  --popover: #1c1c1f;
+  --popover-foreground: #fafafa;
+  --primary: #d4ff00;
+  --primary-foreground: #09090b;
+  --primary-strong: #bef000;
+  --primary-soft: rgba(212, 255, 0, 0.14);
+  --primary-light: #e4ff5c;
+  --secondary: #1c1c1f;
+  --secondary-foreground: #fafafa;
+  --muted: #1c1c1f;
+  --muted-foreground: #a1a1aa;
+  --accent: #a3e635;
+  --accent-foreground: #09090b;
   --destructive: #ef4444;
-  --destructive-foreground: #f2f4f7;
+  --destructive-foreground: #fafafa;
   --warning: #f59e0b;
   --warning-soft: rgba(245, 158, 11, 0.15);
-  --border: #2a2e35;
-  --input: #2a2e35;
-  --ring: #38bdf8;
-  --disabled: #5b626d;
-  --radius: 0.75rem;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4ff00;
+  --disabled: #52525b;
+  --radius: 1rem;
 }
 
 :root.light {
-  --background: #f5f7fa;
-  --foreground: #0a0a0b;
+  --background: #fafafa;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #0a0a0b;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0b;
-  --primary: #0284c7;
+  --popover-foreground: #09090b;
+  --primary: #65a30d;
   --primary-foreground: #ffffff;
-  --primary-strong: #0369a1;
-  --primary-soft: rgba(2, 132, 199, 0.12);
-  --primary-light: #38bdf8;
-  --secondary: #e5e7eb;
-  --secondary-foreground: #0a0a0b;
-  --muted: #e5e7eb;
-  --muted-foreground: #4b5563;
-  --accent: #e5e7eb;
-  --accent-foreground: #0a0a0b;
-  --destructive: #ef4444;
+  --primary-strong: #4d7c0f;
+  --primary-soft: rgba(101, 163, 13, 0.12);
+  --primary-light: #a3e635;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #a3e635;
+  --accent-foreground: #09090b;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --warning: #d97706;
   --warning-soft: rgba(217, 119, 6, 0.12);
-  --border: #d1d5db;
-  --input: #d1d5db;
-  --ring: #0284c7;
-  --disabled: #9ca3af;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #65a30d;
+  --disabled: #a1a1aa;
 }
 
 @theme inline {
@@ -108,6 +108,59 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "cv11", "ss01";
+  position: relative;
+  min-height: 100dvh;
+}
+
+/* Ambient glow layer para que el glass tenga algo sobre lo que "flotar". */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 40% at 20% 0%, rgba(212, 255, 0, 0.08), transparent 60%),
+    radial-gradient(50% 35% at 100% 20%, rgba(163, 230, 53, 0.06), transparent 65%),
+    radial-gradient(70% 50% at 50% 100%, rgba(212, 255, 0, 0.05), transparent 70%);
+}
+
+:root.light body::before {
+  background:
+    radial-gradient(60% 40% at 20% 0%, rgba(101, 163, 13, 0.08), transparent 60%),
+    radial-gradient(50% 35% at 100% 20%, rgba(163, 230, 53, 0.1), transparent 65%),
+    radial-gradient(70% 50% at 50% 100%, rgba(101, 163, 13, 0.05), transparent 70%);
+}
+
+/* Glass surfaces. Sobre el glow quedan translúcidas con blur. */
+@utility glass {
+  background: color-mix(in oklab, var(--card) 65%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  border-radius: var(--radius);
+}
+
+@utility glass-strong {
+  background: color-mix(in oklab, var(--card) 80%, transparent);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  border-radius: var(--radius);
+}
+
+@utility glass-nav {
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-top: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+}
+
+@utility glass-chip {
+  background: color-mix(in oklab, var(--card) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
 }
 
 /* Inputs y zonas editables sí permiten selección (copiar/pegar peso, notas,

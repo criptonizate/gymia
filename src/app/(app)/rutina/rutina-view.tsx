@@ -74,10 +74,10 @@ export function RutinaView({ routine }: Props) {
               key={s}
               onClick={() => setSem(s)}
               className={[
-                "min-h-10 shrink-0 rounded-full border px-4 text-sm font-medium",
+                "glass-chip min-h-10 shrink-0 rounded-full px-4 text-sm font-medium",
                 sem === s
-                  ? "border-primary bg-[var(--primary-soft)] text-primary"
-                  : "border-border bg-card text-muted-foreground",
+                  ? "!border-primary !bg-[var(--primary-soft)] text-primary"
+                  : "text-muted-foreground",
               ].join(" ")}
             >
               Semana {s}

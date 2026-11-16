@@ -94,7 +94,7 @@ export default async function HoyPage() {
             <li key={e.id}>
               <Link
                 href={`/ejercicios/${e.exercise.slug}`}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 hover:border-primary/50"
+                className="glass flex items-center gap-3 p-3 transition-colors hover:border-primary/50"
               >
                 <ExerciseMedia
                   mediaUrl={e.exercise.media_url}

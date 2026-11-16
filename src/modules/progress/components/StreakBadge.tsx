@@ -19,7 +19,11 @@ function computeStreak(days: TrainingDay[]): {
   today.setHours(0, 0, 0, 0);
 
   function fmt(d: Date): string {
-    return d.toISOString().slice(0, 10);
+    // Fecha LOCAL para no desfasar las sesiones de la noche en ARG (UTC-3).
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
 
   let current = 0;
@@ -76,7 +80,7 @@ export function StreakBadge({
       const dow = (weekStart.getDay() + 6) % 7;
       weekStart.setDate(weekStart.getDate() - dow);
       weekStart.setHours(0, 0, 0, 0);
-      const stamp = weekStart.toISOString().slice(0, 10);
+      const stamp = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
       if (metaOk && localStorage.getItem(key) !== stamp) {
         setFire(Date.now());
         localStorage.setItem(key, stamp);

@@ -229,9 +229,16 @@ function Field({
   onChange: (v: number | null) => void;
   step: number;
 }) {
+  // Mantenemos el texto crudo que el user está tipeando. Si solo
+  // usáramos `value` numérico, tipear "2." devolvería 2, y el input
+  // controlado se re-renderizaría como "2", borrando el punto antes de
+  // que termine de escribir "2.5".
+  const [draft, setDraft] = useState<string | null>(null);
+  const displayed = draft ?? (value ?? "");
   function bump(delta: number) {
     const base = value ?? 0;
     const next = Math.max(0, roundToStep(base + delta, step));
+    setDraft(null);
     onChange(next);
   }
   return (
@@ -248,13 +255,15 @@ function Field({
           type="number"
           inputMode="decimal"
           step={step}
-          value={value ?? ""}
+          value={displayed}
           onChange={(e) => {
             const raw = e.target.value;
+            setDraft(raw);
             if (raw === "") return onChange(null);
             const n = Number(raw);
             onChange(Number.isFinite(n) ? n : null);
           }}
+          onBlur={() => setDraft(null)}
           className="w-full bg-transparent text-center text-base font-bold tabular-nums outline-none sm:text-lg"
           placeholder="—"
         />

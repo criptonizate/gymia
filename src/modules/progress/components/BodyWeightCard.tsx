@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { Check, Loader2, Scale } from "lucide-react";
 import { logBodyWeight } from "@/modules/progress/actions";
 import type { BodyWeightEntry } from "@/modules/progress/queries";
+import { useUnit } from "@/lib/use-unit";
+import { fromDisplay, toDisplay } from "@/lib/units";
 
 type Props = { entries: BodyWeightEntry[] };
 
@@ -16,6 +18,7 @@ export function BodyWeightCard({ entries }: Props) {
   const [fecha, setFecha] = useState(today);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const unit = useUnit();
 
   const latest = entries[0];
   const chart = entries.slice(0, 12).reverse();
@@ -24,10 +27,13 @@ export function BodyWeightCard({ entries }: Props) {
   const range = max - min || 1;
 
   function onSave() {
-    const n = Number(kg.replace(",", "."));
-    if (!Number.isFinite(n) || n <= 0) return;
+    const displayNum = Number(kg.replace(",", "."));
+    if (!Number.isFinite(displayNum) || displayNum <= 0) return;
+    // Siempre persistimos en kg. Si el user ve lb, convertimos antes de
+    // guardar para que el histórico sea comparable.
+    const kgNum = fromDisplay(displayNum, unit);
     start(async () => {
-      const r = await logBodyWeight(fecha, n);
+      const r = await logBodyWeight(fecha, kgNum ?? displayNum);
       if (!r.ok) setError(r.error);
       else {
         setError(null);
@@ -36,6 +42,8 @@ export function BodyWeightCard({ entries }: Props) {
     });
   }
 
+  const latestDisplay = latest ? toDisplay(latest.kg, unit) : null;
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between">
@@ -43,9 +51,9 @@ export function BodyWeightCard({ entries }: Props) {
           <Scale className="h-4 w-4 text-primary" />
           Peso corporal
         </span>
-        {latest && (
+        {latest && latestDisplay != null && (
           <span className="text-sm font-bold tabular-nums">
-            {latest.kg} kg
+            {latestDisplay} {unit}
           </span>
         )}
       </div>
@@ -81,7 +89,7 @@ export function BodyWeightCard({ entries }: Props) {
           type="number"
           inputMode="decimal"
           step="0.1"
-          placeholder="kg"
+          placeholder={unit}
           value={kg}
           onChange={(e) => setKg(e.target.value)}
           className="min-h-11 w-20 rounded-lg border border-border bg-background px-2 text-center text-base tabular-nums outline-none focus:border-primary"

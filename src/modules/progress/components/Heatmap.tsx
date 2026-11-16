@@ -4,7 +4,14 @@ const COLS = 17; // ~4 meses
 const ROWS = 7;
 
 function toKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  // Fecha LOCAL (no UTC). La MV agrupa por `started_at::date` del server,
+  // pero el user ve "hoy" en su zona horaria. En Argentina (UTC-3) el
+  // toISOString() de 22:00 locales devuelve el día siguiente — el
+  // calendario se corría para los entrenos de la noche.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function startOfWeek(d: Date): Date {

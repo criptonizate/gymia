@@ -568,6 +568,46 @@ export function FocusView({
           <ChevronRight className="h-5 w-5" />
         </BigBtn>
       </nav>
+
+      {/* Progreso de la sesión: cuántos ejercicios van y cuántos faltan.
+          El valor sube medio paso al empezar un ejercicio y al terminar
+          todas las series — así el user ve el avance intra-ejercicio. */}
+      <div
+        className="sticky bottom-0 flex flex-col gap-1 border-t border-border bg-background/95 px-4 pb-[env(safe-area-inset-bottom,0px)] pt-2 backdrop-blur"
+        role="group"
+        aria-label="Progreso de la sesión"
+      >
+        <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground tabular-nums">
+          <span>
+            Ejercicio {Math.min(i + 1, total)} de {total}
+          </span>
+          <span>
+            {ejercicios.slice(0, i).reduce((a, e) => a + e.series, 0) +
+              currentSets.length}
+            {" / "}
+            {ejercicios.reduce((a, e) => a + e.series, 0)} series
+          </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary transition-[width] duration-300"
+            style={{
+              width: `${
+                total === 0
+                  ? 0
+                  : Math.min(
+                      100,
+                      Math.round(
+                        ((i + (terminado ? 1 : currentSets.length / Math.max(1, ex.series))) /
+                          total) *
+                          100,
+                      ),
+                    )
+              }%`,
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

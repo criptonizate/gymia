@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus, Sliders } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnit } from "@/lib/use-unit";
 import { fromDisplay, toDisplay, KG_TO_LB } from "@/lib/units";
@@ -50,6 +50,10 @@ export function SetRow({
   );
   const [rir, setRir] = useState<number | null>(initialRir ?? null);
   const [done, setDone] = useState<boolean>(initialCompletada);
+  // En modo normal el RIR queda detrás de un botón para no competir con
+  // peso/reps/✓ por la atención. Si el user lo abre acá queda abierto
+  // mientras dure la serie.
+  const [showAdjust, setShowAdjust] = useState(false);
   const unit = useUnit();
 
   // peso/reps no se sincronizan desde props: pisaríamos lo que el user está
@@ -169,14 +173,28 @@ export function SetRow({
         step={1}
       />
 
-      <RirPill
-        value={rir}
-        objetivo={rirObjetivo ?? null}
-        onChange={(v) => {
-          setRir(v);
-          commit({ peso_kg: peso, reps, rir: v, completada: done });
-        }}
-      />
+      {/* RIR: oculto por default (prioridad = avanzar con la rutina). El
+          user puede abrirlo con el botón de ajustes. Si ya hay un valor
+          registrado, lo mostramos siempre para que no lo pierda. */}
+      {rir != null || showAdjust ? (
+        <RirPill
+          value={rir}
+          objetivo={rirObjetivo ?? null}
+          onChange={(v) => {
+            setRir(v);
+            commit({ peso_kg: peso, reps, rir: v, completada: done });
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          aria-label="Mostrar ajustes (RIR, etc.)"
+          onClick={() => setShowAdjust(true)}
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
+        >
+          <Sliders className="h-4 w-4" />
+        </button>
+      )}
 
       <button
         onClick={toggleDone}

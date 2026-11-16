@@ -35,11 +35,14 @@ import {
   startFinishSyncOnline,
 } from "@/modules/workouts/offline-session";
 import {
+  autoSuggestion,
   weightStep,
   type CurrentTarget,
   type SetResult,
   type Suggestion,
 } from "@/modules/workouts/progression";
+import { BottomSheet } from "@/components/bottom-sheet";
+import { Button } from "@/components/button";
 import type { RoutineExerciseRow } from "@/modules/routines/queries";
 import type { SetLog } from "@/modules/workouts/queries";
 
@@ -107,6 +110,26 @@ export function SessionView({
   const [presetSecs, setPresetSecs] = useState<number | null>(null);
   const [focusMode, setFocusMode] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Primera sesión del user: mostrar un sheet explicando qué hace el modo
+  // focus. Lo marcamos visto en localStorage para no repetirlo.
+  const [introOpen, setIntroOpen] = useState(false);
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("gymia-session-intro-seen")) {
+        setIntroOpen(true);
+      }
+    } catch {
+      /* noop */
+    }
+  }, []);
+  function dismissIntro() {
+    try {
+      localStorage.setItem("gymia-session-intro-seen", "1");
+    } catch {
+      /* noop */
+    }
+    setIntroOpen(false);
+  }
 
   // Arrancar sync offline al montar la vista
   useEffect(() => startQueueSyncOnline(), []);
@@ -317,7 +340,10 @@ export function SessionView({
     currentSets.length >= current.series &&
     currentSets.filter((s) => s.completada).length >= current.series;
 
-  function openProgression() {
+  function buildTargetAndResults(): {
+    target: CurrentTarget;
+    results: SetResult[];
+  } {
     const target: CurrentTarget = {
       tipo_registro: activeTipoRegistro,
       equipment_slug: activeEquipmentSlug,
@@ -333,7 +359,35 @@ export function SessionView({
       reps: s.reps,
       duracion_seg: s.duracion_seg,
     }));
+    return { target, results };
+  }
+
+  function openProgression() {
+    const { target, results } = buildTargetAndResults();
     setProgressionOpen({ target, results, routineExerciseId: current.id });
+  }
+
+  // Avance rápido al terminar un ejercicio: aplicamos la sugerencia
+  // automática en el fondo, pasamos al próximo y arrancamos el descanso.
+  // El user puede abrir "Ajustes de progresión" si quiere revisar o
+  // cambiar la decisión antes de la próxima sesión.
+  async function advanceToNext() {
+    const { target, results } = buildTargetAndResults();
+    const suggestion = autoSuggestion(target, results);
+    // Fire-and-forget para no bloquear la UX de avance.
+    if (!isSub) {
+      void applyProgression(current.id, target, suggestion);
+    }
+    const wasLast = i >= ejercicios.length - 1;
+    if (wasLast) {
+      setSummaryOpen(true);
+      return;
+    }
+    setI(i + 1);
+    // Arrancamos el descanso usando el del ejercicio actual (al que recién
+    // terminamos). Si ya había un rest corriendo lo dejamos.
+    setRest((prev) => prev ?? { seconds: current.descanso_seg });
+    setPresetSecs(null);
   }
 
   async function onPickSuggestion(s: Suggestion) {
@@ -518,13 +572,21 @@ export function SessionView({
       {/* Acciones */}
       <section className="flex flex-col gap-2 px-4 pb-24">
         {allDoneCurrent && (
-          <button
-            onClick={openProgression}
-            className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-[var(--primary-strong)]"
-          >
-            <Check className="h-5 w-5" />
-            {i < ejercicios.length - 1 ? "Siguiente" : "Terminar"}
-          </button>
+          <>
+            <button
+              onClick={advanceToNext}
+              className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-[var(--primary-strong)]"
+            >
+              <Check className="h-5 w-5" />
+              {i < ejercicios.length - 1 ? "Siguiente" : "Terminar"}
+            </button>
+            <button
+              onClick={openProgression}
+              className="min-h-10 rounded-xl text-xs font-medium text-muted-foreground underline underline-offset-4"
+            >
+              Ajustar progresión del ejercicio
+            </button>
+          </>
         )}
       </section>
 
@@ -681,6 +743,49 @@ export function SessionView({
           onRequestFinish={() => setSummaryOpen(true)}
         />
       )}
+
+      <BottomSheet
+        open={introOpen}
+        onClose={dismissIntro}
+        title="Bienvenido a tu primer entrenamiento"
+      >
+        <div className="flex flex-col gap-4 pb-2">
+          <p className="text-sm text-muted-foreground">
+            Dos consejos rápidos antes de arrancar:
+          </p>
+          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[var(--primary-soft)] text-primary">
+              <Focus className="h-5 w-5" />
+            </span>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold">Modo Focus</h3>
+              <p className="text-xs text-muted-foreground">
+                Pensado para usar sin mirar la pantalla: botones gigantes,
+                una serie por vez, cuenta regresiva y narración de voz.
+                Activalo con el botón <strong>Focus</strong> arriba a la
+                derecha cuando quieras entrenar con una sola mano.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[var(--primary-soft)] text-primary">
+              <Check className="h-5 w-5" />
+            </span>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold">Avanzá sin trabas</h3>
+              <p className="text-xs text-muted-foreground">
+                Terminás las series del ejercicio, tocás{" "}
+                <strong>Siguiente</strong> y pasás al próximo con el
+                descanso corriendo. La progresión (más peso, más reps)
+                se aplica sola — podés ajustarla después si querés.
+              </p>
+            </div>
+          </div>
+          <Button size="lg" onClick={dismissIntro}>
+            Entendido, a entrenar
+          </Button>
+        </div>
+      </BottomSheet>
 
       {summaryOpen && (
         <SummaryOverlay

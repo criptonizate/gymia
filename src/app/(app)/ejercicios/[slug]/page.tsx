@@ -5,12 +5,15 @@ import {
   getExerciseBySlug,
   getUserExerciseVideo,
   isFavorite,
+  listEquipment,
+  listMuscleGroups,
 } from "@/modules/exercises/queries";
 import { ExerciseHero } from "@/modules/exercises/components/ExerciseHero";
 import { YoutubeBlock } from "@/modules/exercises/components/YoutubeBlock";
 import { History } from "@/modules/exercises/components/History";
 import { FavoriteButton } from "@/modules/exercises/components/FavoriteButton";
 import { EditMediaButton } from "@/modules/exercises/components/EditMediaSheet";
+import { EditExerciseButton } from "@/modules/exercises/components/EditExerciseButton";
 import { getExerciseHistory } from "@/modules/workouts/queries";
 import { isAdmin } from "@/lib/supabase/profile";
 
@@ -37,6 +40,9 @@ export default async function EjercicioDetallePage({
     isFavorite(ex.id),
     isAdmin(),
   ]);
+  const [muscleGroups, equipment] = admin
+    ? await Promise.all([listMuscleGroups(), listEquipment()])
+    : [[], []];
   const effectiveVideoId = userVideoId ?? ex.youtube_video_id ?? null;
 
   return (
@@ -51,12 +57,32 @@ export default async function EjercicioDetallePage({
         </Link>
         <div className="flex items-center gap-2">
           {admin && (
-            <EditMediaButton
-              exerciseId={ex.id}
-              exerciseNombre={ex.nombre}
-              muscleGroupSlug={ex.muscle_group.slug}
-              initialFrames={ex.media_frames}
-            />
+            <>
+              <EditExerciseButton
+                exerciseId={ex.id}
+                muscleGroups={muscleGroups}
+                equipment={equipment}
+                initial={{
+                  nombre: ex.nombre,
+                  muscle_group_id: ex.muscle_group_id,
+                  equipment_id: ex.equipment_id,
+                  patron: ex.patron,
+                  tipo: ex.tipo,
+                  tipo_registro: ex.tipo_registro,
+                  nivel_minimo: ex.nivel_minimo,
+                  secondary_muscles: ex.secondary_muscles,
+                  instrucciones: ex.instrucciones,
+                  errores_comunes: ex.errores_comunes,
+                  youtube_query: ex.youtube_query,
+                }}
+              />
+              <EditMediaButton
+                exerciseId={ex.id}
+                exerciseNombre={ex.nombre}
+                muscleGroupSlug={ex.muscle_group.slug}
+                initialFrames={ex.media_frames}
+              />
+            </>
           )}
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
             {NIVEL_LABEL[ex.nivel_minimo]}

@@ -32,7 +32,8 @@ export function FavoriteButton({
       aria-label={fav ? "Quitar de favoritos" : "Marcar favorito"}
       onClick={onClick}
       disabled={pending}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card disabled:opacity-60"
+      aria-busy={pending || undefined}
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card transition-transform duration-150 active:scale-[0.92] disabled:opacity-60 motion-reduce:active:scale-100"
     >
       <Star
         className={fav ? "h-4 w-4 fill-primary text-primary" : "h-4 w-4 text-muted-foreground"}

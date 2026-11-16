@@ -10,6 +10,7 @@ import {
   Images,
 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { Button } from "@/components/button";
 import {
   updateExerciseFrames,
   uploadExerciseFrames,
@@ -186,32 +187,37 @@ export function EditMediaSheet({
           hidden
           onChange={onPickFiles}
         />
-        <button
+        <Button
+          variant="outline"
           disabled={pending || frames.length >= MAX_FRAMES}
           onClick={() => inputRef.current?.click()}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background text-sm font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground disabled:opacity-60"
+          className="border-dashed text-muted-foreground"
         >
           <ImagePlus className="h-4 w-4 text-primary" />
           Agregar imagen ({frames.length}/{MAX_FRAMES})
-        </button>
+        </Button>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="outline"
+            fullWidth
             onClick={onClose}
-            className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
+            disabled={pending}
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            fullWidth
             onClick={onSave}
-            disabled={!dirty || pending}
-            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            disabled={!dirty}
+            loading={pending}
+            loadingText="Guardando…"
           >
-            <Check className="h-4 w-4" />
-            {pending ? "Guardando…" : "Guardar"}
-          </button>
+            {!pending && <Check className="h-4 w-4" />}
+            Guardar
+          </Button>
         </div>
       </div>
     </BottomSheet>

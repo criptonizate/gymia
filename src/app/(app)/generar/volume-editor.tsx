@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Minus, Plus, Sliders } from "lucide-react";
+import { Button } from "@/components/button";
 import {
   MUSCLE_LABELS,
   MUSCLE_SLUGS,
@@ -140,13 +141,17 @@ export function VolumeEditor({ plan, config, onApply, pending }: Props) {
             >
               Volver al sugerido
             </button>
-            <button
+            <Button
+              size="sm"
+              fullWidth
               onClick={() => onApply(target)}
-              disabled={!dirty || pending}
-              className="min-h-11 flex-1 rounded-xl bg-primary text-xs font-semibold text-primary-foreground disabled:opacity-60"
+              disabled={!dirty}
+              loading={pending}
+              loadingText="Aplicando…"
+              className="text-xs"
             >
-              {pending ? "Aplicando…" : "Aplicar y regenerar"}
-            </button>
+              Aplicar y regenerar
+            </Button>
           </div>
         </div>
       )}

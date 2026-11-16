@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Check, X, LineChart } from "lucide-react";
+import { Pencil, Check, X, LineChart, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { updateSetLog } from "@/modules/workouts/actions";
 import type { HistoryEntry } from "@/modules/workouts/queries";
@@ -176,6 +176,7 @@ function HistoryRow({
               )}
               <button
                 disabled={pending}
+                aria-busy={pending || undefined}
                 onClick={() =>
                   start(async () => {
                     await updateSetLog(s.id, {
@@ -185,10 +186,14 @@ function HistoryRow({
                     });
                   })
                 }
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-60"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform duration-150 active:scale-[0.92] disabled:opacity-60 motion-reduce:active:scale-100"
                 aria-label="Guardar"
               >
-                <Check className="h-4 w-4" />
+                {pending ? (
+                  <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
               </button>
             </div>
           ))}

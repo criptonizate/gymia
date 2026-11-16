@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check, ChevronDown, UserCog } from "lucide-react";
+import { Button } from "@/components/button";
 import { saveProfile } from "@/modules/progress/actions";
 import type { Profile, Sexo } from "@/lib/supabase/profile";
 
@@ -162,14 +163,14 @@ export function ProfileExtendedEditor({ profile }: { profile: Profile }) {
 
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-          <button
+          <Button
             onClick={save}
-            disabled={pending}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            loading={pending}
+            loadingText="Guardando…"
           >
-            <Check className="h-4 w-4" />
-            {pending ? "Guardando…" : "Guardar"}
-          </button>
+            {!pending && <Check className="h-4 w-4" />}
+            Guardar
+          </Button>
         </div>
       )}
     </section>

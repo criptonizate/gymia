@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { CirclePlay, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { Button } from "@/components/button";
 import { saveUserVideo, clearUserVideo } from "@/modules/exercises/actions";
 import {
   youtubeEmbedUrl,
@@ -117,13 +118,14 @@ export function YoutubeBlock({
             className="min-h-12 rounded-xl border border-border bg-background px-4 text-base outline-none focus:border-primary"
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <button
+          <Button
             onClick={onSave}
-            disabled={pending || !link.trim()}
-            className="min-h-12 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+            disabled={!link.trim()}
+            loading={pending}
+            loadingText="Guardando..."
           >
-            {pending ? "Guardando..." : "Guardar"}
-          </button>
+            Guardar
+          </Button>
         </div>
       </BottomSheet>
     </section>

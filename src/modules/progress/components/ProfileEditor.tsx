@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check, Pencil } from "lucide-react";
+import { Button } from "@/components/button";
 import { saveProfile } from "@/modules/progress/actions";
 import type { Nivel, Objetivo, Profile } from "@/lib/supabase/profile";
 
@@ -84,20 +85,23 @@ export function ProfileEditor({ profile }: Props) {
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="outline"
+          fullWidth
           onClick={() => setEditing(false)}
-          className="min-h-12 flex-1 rounded-xl border border-border bg-background text-sm font-medium"
+          disabled={pending}
         >
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
+          fullWidth
           onClick={save}
-          disabled={pending}
-          className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          loading={pending}
+          loadingText="Guardando…"
         >
-          <Check className="h-4 w-4" />
-          {pending ? "Guardando…" : "Guardar"}
-        </button>
+          {!pending && <Check className="h-4 w-4" />}
+          Guardar
+        </Button>
       </div>
     </section>
   );

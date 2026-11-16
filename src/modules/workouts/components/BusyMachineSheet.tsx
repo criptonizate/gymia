@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { Button } from "@/components/button";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { listSubstitutes, replaceInRoutine } from "@/modules/workouts/actions";
 import type { ExerciseWithRelations } from "@/modules/exercises/types";
@@ -148,20 +149,26 @@ function OptionRow({
         </div>
       </div>
       <div className="flex gap-2">
-        <button
-          disabled={pending}
+        <Button
+          size="sm"
+          fullWidth
+          loading={pending}
+          loadingText="Aplicando…"
           onClick={onUseOnce}
-          className="min-h-10 flex-1 rounded-lg bg-primary text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+          className="rounded-lg text-xs"
         >
           Usar sólo hoy
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          fullWidth
           disabled={pending}
           onClick={onUseAlways}
-          className="min-h-10 flex-1 rounded-lg border border-border bg-background text-xs font-medium hover:bg-accent disabled:opacity-60"
+          className="rounded-lg text-xs"
         >
           Usar siempre
-        </button>
+        </Button>
       </div>
     </li>
   );

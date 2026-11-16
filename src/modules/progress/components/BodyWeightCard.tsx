@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Scale } from "lucide-react";
+import { Check, Loader2, Scale } from "lucide-react";
 import { logBodyWeight } from "@/modules/progress/actions";
 import type { BodyWeightEntry } from "@/modules/progress/queries";
 
@@ -89,10 +89,15 @@ export function BodyWeightCard({ entries }: Props) {
         <button
           onClick={onSave}
           disabled={pending || !kg}
-          className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-60"
+          aria-busy={pending || undefined}
+          className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform duration-150 active:scale-[0.92] disabled:opacity-60 motion-reduce:active:scale-100"
           aria-label="Guardar peso"
         >
-          <Check className="h-4 w-4" />
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Check className="h-4 w-4" />
+          )}
         </button>
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}

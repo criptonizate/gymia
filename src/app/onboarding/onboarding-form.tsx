@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Baby, Medal, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Button } from "@/components/button";
 import { saveOnboarding } from "./actions";
 
 type NivelPick = {
@@ -117,13 +118,16 @@ export function OnboardingForm({ nombreInicial }: { nombreInicial: string }) {
         </p>
       </section>
 
-      <button
+      <Button
         type="submit"
-        disabled={!puedeEnviar || pending}
-        className="mt-4 min-h-14 rounded-xl bg-primary text-base font-semibold text-primary-foreground hover:bg-[var(--primary-strong)] disabled:opacity-60"
+        size="lg"
+        disabled={!puedeEnviar}
+        loading={pending}
+        loadingText="Guardando..."
+        className="mt-4"
       >
-        {pending ? "Guardando..." : "Empezar"}
-      </button>
+        Empezar
+      </Button>
     </form>
   );
 }

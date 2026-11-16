@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { listSwapAlternatives, swapExercise } from "@/modules/routines/actions";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
@@ -52,6 +53,12 @@ export function SwapSheet({
           Elegí otro del mismo patrón y grupo muscular.
         </p>
         {error && <p className="text-sm text-destructive">{error}</p>}
+        {pending && (
+          <p className="flex items-center gap-2 text-sm text-primary">
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            Reemplazando…
+          </p>
+        )}
         {!opts && <p className="text-sm text-muted-foreground">Cargando…</p>}
         {opts && opts.length === 0 && (
           <p className="text-sm text-muted-foreground">
@@ -65,7 +72,8 @@ export function SwapSheet({
                 <button
                   disabled={pending}
                   onClick={() => pick(e.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2 text-left hover:border-primary/50 disabled:opacity-60"
+                  aria-busy={pending || undefined}
+                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2 text-left transition-transform duration-150 hover:border-primary/50 active:scale-[0.98] disabled:opacity-60 motion-reduce:active:scale-100"
                 >
                   <ExerciseMedia
                     mediaUrl={e.media_url}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ExerciseMedia } from "@/modules/exercises/components/ExerciseMedia";
 import { addExerciseToDay } from "@/modules/routines/actions";
@@ -54,6 +54,12 @@ export function AddExerciseSheet({ open, onClose, routineDayId }: Props) {
           />
         </label>
         {error && <p className="text-sm text-destructive">{error}</p>}
+        {pending && (
+          <p className="flex items-center gap-2 text-sm text-primary">
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+            Agregando ejercicio…
+          </p>
+        )}
         {!all && <p className="text-sm text-muted-foreground">Cargando…</p>}
         {all && filtered.length === 0 && (
           <p className="text-sm text-muted-foreground">Sin resultados.</p>
@@ -64,7 +70,8 @@ export function AddExerciseSheet({ open, onClose, routineDayId }: Props) {
               <button
                 disabled={pending}
                 onClick={() => pick(e.id)}
-                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2 text-left hover:border-primary/50 disabled:opacity-60"
+                aria-busy={pending || undefined}
+                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2 text-left transition-transform duration-150 hover:border-primary/50 active:scale-[0.98] disabled:opacity-60 motion-reduce:active:scale-100"
               >
                 <ExerciseMedia
                   mediaUrl={e.media_url}

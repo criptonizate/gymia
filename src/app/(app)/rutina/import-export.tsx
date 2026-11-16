@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Upload } from "lucide-react";
+import { Button } from "@/components/button";
 import {
   exportActiveRoutine,
   importRoutineFromPlan,
@@ -57,22 +58,30 @@ export function ImportExportButtons() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          fullWidth
           onClick={onExport}
-          disabled={pending}
-          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-medium disabled:opacity-60"
+          loading={pending}
+          loadingText="Exportando…"
+          className="text-xs"
         >
-          <Download className="h-4 w-4 text-primary" />
+          {!pending && <Download className="h-4 w-4 text-primary" />}
           Exportar
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          fullWidth
           onClick={onImportClick}
-          disabled={pending}
-          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-medium disabled:opacity-60"
+          loading={pending}
+          loadingText="Importando…"
+          className="text-xs"
         >
-          <Upload className="h-4 w-4 text-primary" />
+          {!pending && <Upload className="h-4 w-4 text-primary" />}
           Importar
-        </button>
+        </Button>
         <input
           ref={fileRef}
           type="file"

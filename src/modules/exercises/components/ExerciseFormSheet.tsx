@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { Button } from "@/components/button";
 import {
   createExercise,
   deleteExerciseAndRedirect,
@@ -275,30 +276,28 @@ export function ExerciseFormSheet({
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <div className="flex gap-2 pt-1">
-          <button
+          <Button
+            variant="outline"
+            fullWidth
             onClick={onClose}
             disabled={pending}
-            className="min-h-12 flex-1 rounded-xl border border-border bg-card text-sm font-medium"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            fullWidth
             onClick={submit}
-            disabled={pending}
-            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            loading={pending}
+            loadingText={mode === "create" ? "Creando…" : "Guardando…"}
           >
-            {mode === "create" ? (
-              <>
+            {!pending &&
+              (mode === "create" ? (
                 <Plus className="h-4 w-4" />
-                {pending ? "Creando…" : "Crear"}
-              </>
-            ) : (
-              <>
+              ) : (
                 <Check className="h-4 w-4" />
-                {pending ? "Guardando…" : "Guardar"}
-              </>
-            )}
-          </button>
+              ))}
+            {mode === "create" ? "Crear" : "Guardar"}
+          </Button>
         </div>
 
         {mode === "edit" && initial && (
@@ -307,14 +306,15 @@ export function ExerciseFormSheet({
               Zona peligrosa
             </span>
             {!confirmDelete ? (
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setConfirmDelete(true)}
                 disabled={pending}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background text-sm font-semibold text-destructive"
+                className="border-destructive/40 text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
                 Eliminar ejercicio
-              </button>
+              </Button>
             ) : (
               <div className="flex flex-col gap-2">
                 <p className="text-xs text-muted-foreground">
@@ -322,21 +322,26 @@ export function ExerciseFormSheet({
                   registros que lo usan, no se podrá borrar.
                 </p>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    fullWidth
                     onClick={() => setConfirmDelete(false)}
                     disabled={pending}
-                    className="min-h-11 flex-1 rounded-xl border border-border bg-card text-xs font-medium"
                   >
                     Cancelar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    fullWidth
                     onClick={onDelete}
-                    disabled={pending}
-                    className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-destructive text-xs font-semibold text-destructive-foreground disabled:opacity-60"
+                    loading={pending}
+                    loadingText="Borrando…"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    {pending ? "Borrando…" : "Confirmar borrado"}
-                  </button>
+                    {!pending && <Trash2 className="h-3.5 w-3.5" />}
+                    Confirmar borrado
+                  </Button>
                 </div>
               </div>
             )}

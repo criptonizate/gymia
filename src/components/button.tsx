@@ -14,7 +14,7 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const BASE =
-  "inline-flex select-none items-center justify-center gap-2 rounded-xl font-semibold " +
+  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold " +
   "transition-[transform,background-color,border-color,opacity,box-shadow] duration-150 " +
   "active:scale-[0.97] active:duration-75 " +
   "disabled:pointer-events-none disabled:opacity-60 " +
@@ -73,13 +73,11 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
     >
       {loading && (
         <Loader2
-          className="h-4 w-4 animate-spin motion-reduce:animate-none"
+          className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none"
           aria-hidden
         />
       )}
-      <span className="truncate">
-        {loading && loadingText ? loadingText : children}
-      </span>
+      {loading && loadingText ? loadingText : children}
     </button>
   );
 });

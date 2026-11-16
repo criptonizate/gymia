@@ -69,7 +69,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end justify-center md:items-center md:p-4">
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/85"
         onClick={onClose}
         aria-hidden
       />

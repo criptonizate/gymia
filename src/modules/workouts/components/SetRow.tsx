@@ -120,7 +120,7 @@ export function SetRow({
           : "border-border bg-card",
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
       <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-muted text-xs font-bold tabular-nums">
         {numero}
       </span>
@@ -234,7 +234,7 @@ function Field({
             const n = Number(raw);
             onChange(Number.isFinite(n) ? n : null);
           }}
-          className="w-full bg-transparent text-center text-lg font-bold tabular-nums outline-none"
+          className="w-full bg-transparent text-center text-base font-bold tabular-nums outline-none sm:text-lg"
           placeholder="—"
         />
         <span className="text-[10px] uppercase tracking-wide text-muted-foreground">

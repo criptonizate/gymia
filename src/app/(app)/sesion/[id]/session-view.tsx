@@ -328,22 +328,22 @@ export function SessionView({
             {i + 1} / {ejercicios.length}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-none items-center gap-1">
           <button
             onClick={() => setFocusMode(true)}
-            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-medium"
+            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-2 text-xs font-medium sm:px-3"
             aria-label="Modo focus"
           >
             <Focus className="h-3.5 w-3.5 text-primary" />
-            Focus
+            <span className="hidden sm:inline">Focus</span>
           </button>
           <button
             onClick={() => setBusyOpen(true)}
-            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3 text-xs font-medium"
+            className="flex h-10 items-center gap-1 rounded-full border border-border bg-card px-2 text-xs font-medium sm:px-3"
             aria-label="Máquina ocupada"
           >
             <Repeat className="h-3.5 w-3.5 text-primary" />
-            Ocupada
+            <span className="hidden sm:inline">Ocupada</span>
           </button>
         </div>
       </header>
@@ -700,7 +700,7 @@ function SummaryOverlay({
     }
   }
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col bg-background p-6">
+    <div className="fixed inset-0 z-[90] mx-auto flex max-w-xl flex-col overflow-y-auto bg-background p-6">
       <h2 className="text-2xl font-bold">¡Terminaste!</h2>
       <p className="text-sm text-muted-foreground">Buen laburo.</p>
       <div className="mt-6 grid grid-cols-2 gap-3">

@@ -67,7 +67,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
   const maxH = vhPx ? Math.min(vhPx - 32, vhPx * 0.9) : null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-end justify-center">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center md:items-center md:p-4">
       <div
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
@@ -81,12 +81,12 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
         aria-label={title ? undefined : "Panel"}
         tabIndex={-1}
         style={maxH ? { maxHeight: `${maxH}px` } : undefined}
-        className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-popover text-popover-foreground shadow-xl animate-in slide-in-from-bottom duration-200 outline-none motion-reduce:animate-none"
+        className="relative z-10 flex max-h-[85dvh] w-full max-w-md flex-col rounded-t-3xl border-t border-border bg-popover text-popover-foreground shadow-xl animate-in slide-in-from-bottom duration-200 outline-none motion-reduce:animate-none max-sm:landscape:max-h-[100dvh] max-sm:landscape:rounded-t-none md:max-h-[85vh] md:rounded-3xl md:border"
       >
-        <div className="relative flex items-center justify-center p-4">
-          <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-border" />
+        <div className="sticky top-0 z-10 flex items-center justify-center rounded-t-3xl border-b border-border bg-popover p-4 max-sm:landscape:rounded-t-none">
+          <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-border md:hidden" />
           {title && (
-            <h2 id={titleId} className="mt-1 text-base font-semibold">{title}</h2>
+            <h2 id={titleId} className="mt-1 truncate pr-8 text-base font-semibold">{title}</h2>
           )}
           <button
             onClick={onClose}
@@ -96,7 +96,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="overflow-y-auto px-5 pb-6">{children}</div>
+        <div className="overflow-y-auto px-5 pb-6 pt-3">{children}</div>
       </div>
     </div>,
     document.body,

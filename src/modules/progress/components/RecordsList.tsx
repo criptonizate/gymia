@@ -15,9 +15,9 @@ export function RecordsList({ records }: { records: ExerciseRecord[] }) {
         <li key={r.exercise_id}>
           <Link
             href={`/ejercicios/${r.slug}`}
-            className="flex items-center justify-between rounded-xl border border-border bg-card p-3 hover:border-primary/50"
+            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 hover:border-primary/50"
           >
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium">{r.nombre}</span>
               <span className="text-xs text-muted-foreground tabular-nums">
                 {r.peso_max} kg × {r.reps_en_max}

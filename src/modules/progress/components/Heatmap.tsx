@@ -48,8 +48,9 @@ export function Heatmap({ days }: { days: TrainingDay[] }) {
           <span>más</span>
         </span>
       </div>
+      <div className="overflow-x-auto">
       <div
-        className="grid gap-1"
+        className="grid gap-1 min-w-[380px] md:min-w-0"
         style={{
           gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,
@@ -80,6 +81,7 @@ export function Heatmap({ days }: { days: TrainingDay[] }) {
             />
           );
         })}
+      </div>
       </div>
     </div>
   );

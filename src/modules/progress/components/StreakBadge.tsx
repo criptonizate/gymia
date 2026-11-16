@@ -106,8 +106,8 @@ export function StreakBadge({
           <span className="text-xl font-bold tabular-nums">
             {current} {current === 1 ? "día" : "días"}
           </span>
-          <span className="text-[11px] text-muted-foreground">
-            Meta semanal: {thisWeek}/{weekTarget}
+          <span className="truncate text-[11px] text-muted-foreground">
+            Meta: {thisWeek}/{weekTarget}
             {metaOk ? " ✓" : ""} · récord {longest}
           </span>
         </div>

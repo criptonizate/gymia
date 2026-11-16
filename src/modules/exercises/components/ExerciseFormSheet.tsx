@@ -166,7 +166,7 @@ export function ExerciseFormSheet({
           </select>
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2">
           <Field label="Patrón">
             <select
               value={form.patron}
@@ -199,7 +199,7 @@ export function ExerciseFormSheet({
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2">
           <Field label="Registro">
             <select
               value={form.tipo_registro}

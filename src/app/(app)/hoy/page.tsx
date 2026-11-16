@@ -87,7 +87,7 @@ export default async function HoyPage() {
         weekTarget={ctx.routineConfig.diasPorSemana}
       />
 
-      <ul className="flex flex-col gap-2">
+      <ul className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
         {day.ejercicios.map((e) => {
           const lastSummary = summarizeLast(e);
           return (

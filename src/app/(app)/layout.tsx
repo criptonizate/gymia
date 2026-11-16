@@ -8,7 +8,7 @@ export default function AppLayout({
   return (
     <div className="flex min-h-dvh flex-col">
       <div
-        className="mx-auto w-full max-w-md flex-1"
+        className="mx-auto w-full max-w-md flex-1 md:max-w-2xl lg:max-w-4xl"
         style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         {children}

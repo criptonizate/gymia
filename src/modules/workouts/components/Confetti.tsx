@@ -33,11 +33,19 @@ export function Confetti({
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const w = (c.width = window.innerWidth * dpr);
-    const h = (c.height = window.innerHeight * dpr);
+    let w = (c.width = window.innerWidth * dpr);
+    let h = (c.height = window.innerHeight * dpr);
     c.style.width = window.innerWidth + "px";
     c.style.height = window.innerHeight + "px";
     ctx.scale(dpr, dpr);
+    const onResize = () => {
+      w = c.width = window.innerWidth * dpr;
+      h = c.height = window.innerHeight * dpr;
+      c.style.width = window.innerWidth + "px";
+      c.style.height = window.innerHeight + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    window.addEventListener("resize", onResize);
 
     const n = 120;
     const parts: Particle[] = Array.from({ length: n }, () => ({
@@ -72,7 +80,10 @@ export function Confetti({
       else ctx.clearRect(0, 0, w, h);
     }
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, [trigger, durationMs]);
 
   if (!trigger) return null;

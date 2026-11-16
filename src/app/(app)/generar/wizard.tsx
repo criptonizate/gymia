@@ -286,7 +286,7 @@ export function GenerarWizard({
                 <div className="h-px flex-1 bg-border" />o armá uno<div className="h-px flex-1 bg-border" />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
               {DIAS.map((d) => {
                 const rec = cfg.nivel === "principiante" && d === 3;
                 return (
@@ -314,7 +314,7 @@ export function GenerarWizard({
 
         {step === 2 && (
           <Step title="¿Cuántas semanas dura el plan?">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {SEMANAS.map((s) => {
                 const rec = cfg.nivel === "principiante" && s === 4;
                 return (

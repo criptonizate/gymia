@@ -43,8 +43,8 @@ export function FocusTutorial({ onClose }: { onClose: () => void }) {
   const step = STEPS[i];
   const last = i === STEPS.length - 1;
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-6">
-      <div className="flex max-w-sm flex-col gap-4 rounded-3xl border border-border bg-background p-6">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/70 p-4 sm:p-6">
+      <div className="flex max-h-[90dvh] max-w-sm flex-col gap-4 overflow-y-auto rounded-3xl border border-border bg-background p-5 sm:p-6">
         <div className="text-5xl">{step.emoji}</div>
         <h2 className="text-xl font-bold">{step.title}</h2>
         <p className="text-sm text-muted-foreground">{step.body}</p>

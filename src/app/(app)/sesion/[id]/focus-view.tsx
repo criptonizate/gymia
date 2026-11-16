@@ -252,9 +252,9 @@ export function FocusView({
   const displayPeso = toDisplay(peso, unit);
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col bg-background">
-      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
-        <div className="flex min-w-0 flex-1 flex-col">
+    <div className="fixed inset-0 z-[80] flex flex-col overflow-y-auto bg-background md:mx-auto md:my-4 md:max-w-md md:rounded-3xl md:border md:border-border">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-3">
+        <div className="order-2 flex min-w-full flex-col sm:order-1 sm:min-w-0 sm:flex-1">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">
             {i + 1}/{total} · Serie {Math.min(serieActual, ex.series)}/{ex.series}
           </span>
@@ -262,6 +262,7 @@ export function FocusView({
             {ex.exercise.nombre}
           </h1>
         </div>
+        <div className="order-1 flex flex-none items-center gap-1 sm:order-2">
         <button
           onClick={() => setShowTutorial(true)}
           aria-label="Ayuda"
@@ -291,20 +292,22 @@ export function FocusView({
         >
           <X className="h-5 w-5" />
         </button>
+        </div>
       </header>
       {showTutorial && <FocusTutorial onClose={dismissTutorial} />}
 
       {rest != null && (
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[var(--primary-soft)] px-3 py-2">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border bg-[var(--primary-soft)] px-3 py-2">
           <div className="flex min-w-0 flex-1 flex-col leading-none">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
               Descanso
             </span>
-            <span className="text-5xl font-black tabular-nums text-primary">
+            <span className="text-4xl font-black tabular-nums text-primary sm:text-5xl">
               {rest}
-              <span className="text-xl font-bold"> seg</span>
+              <span className="text-base font-bold sm:text-xl"> seg</span>
             </span>
           </div>
+          <div className="flex gap-2">
           <button
             onClick={() => {
               unlockAudio();
@@ -320,6 +323,7 @@ export function FocusView({
           >
             Saltar
           </button>
+          </div>
         </div>
       )}
 
@@ -339,9 +343,9 @@ export function FocusView({
       </div>
 
       {terminado ? (
-        <section className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
+        <section className="flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
           <Check className="h-20 w-20 text-primary" />
-          <span className="text-xl font-bold">
+          <span className="max-w-full break-words text-xl font-bold">
             Terminaste {ex.exercise.nombre}
           </span>
           <BigBtn primary onClick={siguiente}>
@@ -360,7 +364,7 @@ export function FocusView({
               Objetivo {durObjetivo}s
             </span>
             <span
-              className={`text-[140px] font-black leading-none tabular-nums ${
+              className={`font-black leading-none tabular-nums text-[clamp(4.5rem,30vw,8.75rem)] ${
                 holdRunning ? "text-primary" : ""
               }`}
             >
@@ -395,7 +399,7 @@ export function FocusView({
       ) : (
         <section className="flex flex-1 flex-col items-stretch justify-between gap-4 p-4">
           {firstLast && !sinMedir && (
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="break-words text-center text-sm text-muted-foreground">
               Última vez:{" "}
               {esPeso
                 ? `${firstLast.peso_kg ?? "?"} kg × ${firstLast.reps ?? "?"}`
@@ -405,7 +409,7 @@ export function FocusView({
 
           <button
             onClick={() => setSinMedir((v) => !v)}
-            className="self-center rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground"
+            className="self-center whitespace-nowrap rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground"
           >
             {sinMedir ? "Volver a medir" : "Modo sin medir"}
           </button>

@@ -3,7 +3,7 @@ import type { KpiData } from "@/modules/progress/queries";
 
 export function KpiGrid({ data }: { data: KpiData }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       <Card
         Icon={Dumbbell}
         label="Entrenamientos del mes"

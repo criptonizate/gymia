@@ -46,3 +46,4 @@ next-env.d.ts
 /.playwright
 /blob-report
 /playwright/.cache
+.claude/

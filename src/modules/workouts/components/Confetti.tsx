@@ -27,6 +27,14 @@ export function Confetti({
 
   useEffect(() => {
     if (!trigger) return;
+    // En Low Power Mode (iOS) o si el user pidió reduced-motion no corremos
+    // la animación: 120 partículas a 60fps drena batería y no aporta.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
     const c = canvasRef.current;
     if (!c) return;
     const ctx = c.getContext("2d");

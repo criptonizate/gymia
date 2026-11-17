@@ -11,25 +11,39 @@ type Props = {
 };
 
 export function RestTimer({ seconds, onDone, onDismiss }: Props) {
+  // Anclamos un deadline absoluto en vez de contar con setInterval 1s:
+  // así, cuando iOS/Safari throttlea la tab en background, al volver
+  // calculamos remaining = (deadline - now) y los segundos no se pierden.
+  const [deadline, setDeadline] = useState(() => Date.now() + seconds * 1000);
   const [remaining, setRemaining] = useState(seconds);
   const firedRef = useRef(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
   // Si el padre dispara un rest nuevo con el componente ya montado,
-  // reseteamos. También limpiamos el timeout de 300 ms al desmontar para
-  // no llamar a onDone después de que la vista cambió.
+  // reseteamos deadline. También re-sincronizamos cuando vuelve la tab.
   useEffect(() => {
-    setRemaining(seconds);
+    setDeadline(Date.now() + seconds * 1000);
     firedRef.current = false;
   }, [seconds]);
 
   useEffect(() => {
-    const t = setInterval(() => {
-      setRemaining((r) => (r <= 0 ? 0 : r - 1));
-    }, 1000);
-    return () => clearInterval(t);
-  }, []);
+    let raf = 0;
+    function tick() {
+      const left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+      setRemaining(left);
+      if (left > 0) raf = window.setTimeout(tick, 250) as unknown as number;
+    }
+    tick();
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearTimeout(raf);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [deadline]);
 
   useEffect(() => {
     if (remaining === 0 && !firedRef.current) {
@@ -82,10 +96,13 @@ export function RestTimer({ seconds, onDone, onDismiss }: Props) {
           <span className="text-sm font-medium">{remaining}s restantes</span>
         </div>
         <div className="flex items-center gap-1">
-          <IconBtn onClick={() => setRemaining((r) => Math.max(0, r - 15))} aria="-15s">
+          <IconBtn
+            onClick={() => setDeadline((d) => Math.max(Date.now(), d - 15000))}
+            aria="-15s"
+          >
             <Minus className="h-4 w-4" />
           </IconBtn>
-          <IconBtn onClick={() => setRemaining((r) => r + 15)} aria="+15s">
+          <IconBtn onClick={() => setDeadline((d) => d + 15000)} aria="+15s">
             <Plus className="h-4 w-4" />
           </IconBtn>
           <IconBtn onClick={onDone} aria="Saltar">

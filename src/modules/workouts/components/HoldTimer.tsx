@@ -17,6 +17,9 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
   const [phase, setPhase] = useState<Phase>("ready");
   const [countdown, setCountdown] = useState(3);
   const [elapsed, setElapsed] = useState(0);
+  // Timestamps absolutos para resistir background-throttling en iOS.
+  const runningStartRef = useRef<number | null>(null);
+  const countdownStartRef = useRef<number | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const beep5Fired = useRef(false);
   const beepEndFired = useRef(false);
@@ -34,7 +37,7 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
     };
   }, []);
 
-  // Wake Lock
+  // Wake Lock — con re-adquisición al volver a foreground (iOS lo libera).
   useEffect(() => {
     async function acquire() {
       try {
@@ -46,33 +49,69 @@ export function HoldTimer({ targetSeconds, onComplete, onCancel }: Props) {
         // permiso denegado; ignorar
       }
     }
+    const onVis = () => {
+      if (phase === "running" && document.visibilityState === "visible") {
+        acquire();
+      }
+    };
     if (phase === "running") acquire();
+    document.addEventListener("visibilitychange", onVis);
     return () => {
+      document.removeEventListener("visibilitychange", onVis);
       wakeLockRef.current?.release?.().catch(() => undefined);
       wakeLockRef.current = null;
     };
   }, [phase]);
 
-  // Countdown
+  // Countdown — anclado a timestamp absoluto.
   useEffect(() => {
     if (phase !== "countdown") return;
-    if (countdown <= 0) {
-      setPhase("running");
-      return;
+    if (countdownStartRef.current == null) {
+      countdownStartRef.current = Date.now();
+      beep(80, 660);
     }
-    beep(80, 660);
-    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [phase, countdown]);
+    let raf = 0;
+    function tick() {
+      const elapsedMs = Date.now() - (countdownStartRef.current ?? Date.now());
+      const n = Math.max(0, 3 - Math.floor(elapsedMs / 1000));
+      setCountdown((prev) => {
+        if (n !== prev) beep(80, 660);
+        return n;
+      });
+      if (n <= 0) {
+        setPhase("running");
+        return;
+      }
+      raf = window.setTimeout(tick, 200) as unknown as number;
+    }
+    tick();
+    return () => clearTimeout(raf);
+  }, [phase]);
 
-  // Timer
+  // Timer principal — deadline relativo a runningStartRef.
   useEffect(() => {
     if (phase !== "running") return;
-    const t = setInterval(() => {
-      setElapsed((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(t);
-  }, [phase]);
+    if (runningStartRef.current == null) runningStartRef.current = Date.now();
+    let raf = 0;
+    function tick() {
+      const el = Math.floor(
+        (Date.now() - (runningStartRef.current ?? Date.now())) / 1000,
+      );
+      setElapsed(el);
+      if (el < targetSeconds + 1) {
+        raf = window.setTimeout(tick, 250) as unknown as number;
+      }
+    }
+    tick();
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearTimeout(raf);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [phase, targetSeconds]);
 
   useEffect(() => {
     if (phase !== "running") return;

@@ -146,7 +146,7 @@ function HistoryRow({
                     const v = e.target.value === "" ? null : Number(e.target.value);
                     setSets((p) => p.map((x, i) => (i === idx ? { ...x, peso_kg: v } : x)));
                   }}
-                  className="min-h-10 flex-1 rounded-lg border border-border bg-background px-2 text-sm outline-none focus:border-primary"
+                  className="min-h-10 flex-1 rounded-lg border border-border bg-background px-2 text-base outline-none focus:border-primary"
                   placeholder="kg"
                 />
               )}
@@ -158,7 +158,7 @@ function HistoryRow({
                     const v = e.target.value === "" ? null : Number(e.target.value);
                     setSets((p) => p.map((x, i) => (i === idx ? { ...x, reps: v } : x)));
                   }}
-                  className="min-h-10 flex-1 rounded-lg border border-border bg-background px-2 text-sm outline-none focus:border-primary"
+                  className="min-h-10 flex-1 rounded-lg border border-border bg-background px-2 text-base outline-none focus:border-primary"
                   placeholder="reps"
                 />
               )}
@@ -170,7 +170,7 @@ function HistoryRow({
                     const v = e.target.value === "" ? null : Number(e.target.value);
                     setSets((p) => p.map((x, i) => (i === idx ? { ...x, duracion_seg: v } : x)));
                   }}
-                  className="min-h-10 flex-1 rounded-lg border border-border bg-background px-2 text-sm outline-none focus:border-primary"
+                  className="min-h-10 flex-1 rounded-lg border border-border bg-background px-2 text-base outline-none focus:border-primary"
                   placeholder="seg"
                 />
               )}

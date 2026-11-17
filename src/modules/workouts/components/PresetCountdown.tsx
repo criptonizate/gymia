@@ -7,21 +7,42 @@ type Props = { seconds: number; onDone: () => void; onCancel: () => void };
 
 export function PresetCountdown({ seconds, onDone, onCancel }: Props) {
   const [n, setN] = useState(seconds);
-  // Ref para no reiniciar el effect ni rebeeppear cuando el padre se
-  // re-renderiza con un onDone inline nuevo.
+  const startRef = useRef<number | null>(null);
+  const lastBeepRef = useRef<number>(seconds + 1);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
   useEffect(() => {
-    if (n <= 0) {
-      beep(220, 1000);
-      onDoneRef.current();
-      return;
+    if (startRef.current == null) startRef.current = Date.now();
+    let raf = 0;
+    function tick() {
+      const elapsed = Math.floor(
+        (Date.now() - (startRef.current ?? Date.now())) / 1000,
+      );
+      const left = Math.max(0, seconds - elapsed);
+      setN(left);
+      // Beep sólo al cambiar de número hacia abajo.
+      if (left < lastBeepRef.current && left > 0) {
+        lastBeepRef.current = left;
+        beep(60, 660);
+      }
+      if (left <= 0) {
+        beep(220, 1000);
+        onDoneRef.current();
+        return;
+      }
+      raf = window.setTimeout(tick, 150) as unknown as number;
     }
-    beep(60, 660);
-    const t = setTimeout(() => setN((x) => x - 1), 1000);
-    return () => clearTimeout(t);
-  }, [n]);
+    tick();
+    const onVis = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearTimeout(raf);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [seconds]);
 
   return (
     <div

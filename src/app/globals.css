@@ -194,6 +194,20 @@ img {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Low Power Mode (iOS) y reduced-motion: eliminamos backdrop-filter —
+     repintar blur en cada frame es carísimo y drena batería. Caemos a
+     fondos sólidos equivalentes para mantener legibilidad. */
+  .glass,
+  .glass-strong,
+  .glass-chip {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--card) !important;
+  }
+  /* Ambient layer de gradientes: también fuera en Low Power. */
+  body::before {
+    display: none !important;
+  }
 }
 
 .tabular-nums {

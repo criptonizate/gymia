@@ -15,7 +15,10 @@ import {
   Trophy,
   Heart,
   Rocket,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { GYM_EQUIPMENT_CHOICES, CASA_EXTRAS } from "@/modules/routines/generator/types";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/button";
 import {
@@ -146,11 +149,20 @@ export function GenerarWizard({
     cfg.entorno && cfg.diasPorSemana && cfg.semanas && cfg.nivel && cfg.objetivo;
 
   function next() {
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   }
   function prev() {
     if (step === 0) router.back();
     else setStep((s) => s - 1);
+  }
+
+  function togglePref(slug: string) {
+    const current = cfg.equipmentPreferences ?? [];
+    const has = current.includes(slug);
+    const nextList = has
+      ? current.filter((s) => s !== slug)
+      : [...current, slug];
+    setCfg({ ...cfg, equipmentPreferences: nextList });
   }
 
   function generatePreview() {
@@ -161,7 +173,7 @@ export function GenerarWizard({
       if (!res.ok) setError(res.error);
       else {
         setPlan(res.data);
-        setStep(4);
+        setStep(5);
       }
     });
   }
@@ -197,7 +209,12 @@ export function GenerarWizard({
               <BigPick
                 active={cfg.entorno === "gimnasio"}
                 onClick={() => {
-                  setCfg({ ...cfg, entorno: "gimnasio" });
+                  setCfg({
+                    ...cfg,
+                    entorno: "gimnasio",
+                    equipmentPreferences: [],
+                    avoidPlyo: false,
+                  });
                   next();
                 }}
                 vertical
@@ -213,7 +230,12 @@ export function GenerarWizard({
               <BigPick
                 active={cfg.entorno === "casa"}
                 onClick={() => {
-                  setCfg({ ...cfg, entorno: "casa" });
+                  setCfg({
+                    ...cfg,
+                    entorno: "casa",
+                    equipmentPreferences: [],
+                    avoidPlyo: false,
+                  });
                   next();
                 }}
                 vertical
@@ -231,7 +253,12 @@ export function GenerarWizard({
               <BigPick
                 active={cfg.entorno === "casa_sin_equipo"}
                 onClick={() => {
-                  setCfg({ ...cfg, entorno: "casa_sin_equipo" });
+                  setCfg({
+                    ...cfg,
+                    entorno: "casa_sin_equipo",
+                    equipmentPreferences: [],
+                    avoidPlyo: false,
+                  });
                   next();
                 }}
                 vertical
@@ -251,6 +278,123 @@ export function GenerarWizard({
         )}
 
         {step === 1 && (
+          <Step
+            title={
+              cfg.entorno === "gimnasio"
+                ? "¿Con qué equipos te gusta entrenar?"
+                : cfg.entorno === "casa"
+                  ? "¿Tenés algo más en casa?"
+                  : "¿Algo que preferís evitar?"
+            }
+          >
+            {cfg.entorno === "gimnasio" && (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Elegí los que más usás y vamos a priorizarlos. Si no marcás
+                  ninguno, variamos entre todos.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {GYM_EQUIPMENT_CHOICES.map((eq) => {
+                    const active =
+                      cfg.equipmentPreferences?.includes(eq.slug) ?? false;
+                    return (
+                      <button
+                        key={eq.slug}
+                        type="button"
+                        onClick={() => togglePref(eq.slug)}
+                        className={[
+                          "flex items-center justify-between rounded-xl border px-3 py-3 text-left text-sm font-medium transition",
+                          active
+                            ? "border-primary bg-[var(--primary-soft)] text-primary"
+                            : "border-border bg-card text-foreground hover:border-primary/50",
+                        ].join(" ")}
+                      >
+                        <span>{eq.label}</span>
+                        {active && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {cfg.entorno === "casa" && (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Siempre podés hacer peso corporal + mancuernas + banco.
+                  Marcá sólo lo que realmente tengas a mano para incluirlo.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {CASA_EXTRAS.map((slug) => {
+                    const active =
+                      cfg.equipmentPreferences?.includes(slug) ?? false;
+                    const label =
+                      slug === "banda"
+                        ? "Banda elástica"
+                        : slug === "kettlebell"
+                          ? "Kettlebell"
+                          : "Barra de dominadas";
+                    return (
+                      <button
+                        key={slug}
+                        type="button"
+                        onClick={() => togglePref(slug)}
+                        className={[
+                          "flex items-center justify-between rounded-xl border px-3 py-3 text-left text-sm font-medium transition",
+                          active
+                            ? "border-primary bg-[var(--primary-soft)] text-primary"
+                            : "border-border bg-card text-foreground hover:border-primary/50",
+                        ].join(" ")}
+                      >
+                        <span>{label}</span>
+                        {active && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {cfg.entorno === "casa_sin_equipo" && (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Si vivís en depto o tenés articulaciones sensibles,
+                  podés evitar saltos y plyometría.
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCfg({ ...cfg, avoidPlyo: !cfg.avoidPlyo })
+                  }
+                  className={[
+                    "flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
+                    cfg.avoidPlyo
+                      ? "border-primary bg-[var(--primary-soft)] text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/50",
+                  ].join(" ")}
+                >
+                  {cfg.avoidPlyo ? (
+                    <VolumeX className="h-5 w-5" />
+                  ) : (
+                    <Volume2 className="h-5 w-5" />
+                  )}
+                  <span className="flex flex-col">
+                    <span className="text-sm font-semibold">
+                      Evitar saltos / plyo
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {cfg.avoidPlyo
+                        ? "No vamos a incluir ejercicios con impacto."
+                        : "Vamos a incluirlos cuando corresponda."}
+                    </span>
+                  </span>
+                </button>
+              </div>
+            )}
+          </Step>
+        )}
+
+        {step === 2 && (
           <Step title="¿Cuántos días por semana vas a entrenar?">
             {cfg.entorno === "gimnasio" && (
               <section className="flex flex-col gap-2">
@@ -263,13 +407,18 @@ export function GenerarWizard({
                     <button
                       key={p.key}
                       onClick={() => {
-                        setCfg({ ...p.cfg, entorno: "gimnasio" });
+                        const merged = {
+                          ...p.cfg,
+                          entorno: "gimnasio" as const,
+                          equipmentPreferences: cfg.equipmentPreferences,
+                        };
+                        setCfg(merged);
                         start(async () => {
-                          const res = await previewPlan({ ...p.cfg, entorno: "gimnasio" });
+                          const res = await previewPlan(merged);
                           if (!res.ok) setError(res.error);
                           else {
                             setPlan(res.data);
-                            setStep(4);
+                            setStep(5);
                           }
                         });
                       }}
@@ -313,7 +462,7 @@ export function GenerarWizard({
           </Step>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <Step title="¿Cuántas semanas dura el plan?">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {SEMANAS.map((s) => {
@@ -343,7 +492,7 @@ export function GenerarWizard({
           </Step>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <Step title="¿Cuál es tu objetivo?">
             <div className="flex flex-col gap-3">
               {OBJETIVOS.map((o) => (
@@ -368,7 +517,7 @@ export function GenerarWizard({
           </Step>
         )}
 
-        {step === 4 && plan && (
+        {step === 5 && plan && (
           <div className="flex flex-col gap-4">
             <header className="flex flex-col gap-1">
               <h2 className="text-lg font-semibold">Previsualización</h2>
@@ -473,13 +622,13 @@ export function GenerarWizard({
         )}
       </div>
 
-      {step < 4 && (
+      {step < 5 && (
         <div className="sticky bottom-20 flex items-center justify-between gap-2 border-t border-border bg-background px-4 py-3">
           <Button variant="outline" onClick={prev} disabled={pending}>
             <ArrowLeft className="h-4 w-4" />
             {step === 0 ? "Volver" : "Atrás"}
           </Button>
-          {step < 3 && (
+          {step < 4 && (
             <Button
               onClick={next}
               disabled={!currentStepValue(step, cfg)}
@@ -488,7 +637,7 @@ export function GenerarWizard({
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <Button
               onClick={generatePreview}
               disabled={!cfg.objetivo}
@@ -507,26 +656,32 @@ export function GenerarWizard({
 
 function currentStepValue(step: number, cfg: Config): unknown {
   if (step === 0) return cfg.entorno;
-  if (step === 1) return cfg.diasPorSemana;
-  if (step === 2) return cfg.semanas;
-  if (step === 3) return cfg.objetivo;
+  if (step === 1) return true; // preferencias es opcional
+  if (step === 2) return cfg.diasPorSemana;
+  if (step === 3) return cfg.semanas;
+  if (step === 4) return cfg.objetivo;
   return true;
 }
 
 function StepHeader({ step }: { step: number }) {
-  const titles = ["Entorno", "Días", "Semanas", "Objetivo", "Preview"];
+  const titles = [
+    "Entorno",
+    "Preferencias",
+    "Días",
+    "Semanas",
+    "Objetivo",
+    "Preview",
+  ];
   return (
     <header className="flex flex-col gap-3 px-4 pb-4 pt-4">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          Paso {Math.min(step + 1, 5)} de 5
-        </span>
+        <span>Paso {Math.min(step + 1, 6)} de 6</span>
         <span>{titles[step]}</span>
       </div>
       <div className="h-1 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${((step + 1) / 5) * 100}%` }}
+          style={{ width: `${((step + 1) / 6) * 100}%` }}
         />
       </div>
     </header>

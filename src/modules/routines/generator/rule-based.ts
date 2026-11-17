@@ -14,7 +14,7 @@ import type {
 import { makeRng, shuffle } from "./rng";
 import { CORE_PATRON_ROTATION, pickSplit, type Slot } from "./templates";
 import { prescripcion } from "./prescription";
-import { equipmentForEntorno } from "./types";
+import { equipmentForEntorno, esPlyo } from "./types";
 
 // Warmup: 2 series cortas de colchoneta (abdomen/lumbar/movilidad) antes del main.
 const WARMUP_SIZE = 3;
@@ -197,6 +197,7 @@ function scoreCandidate(
     preferredPrevWeek?: string;
     avoidPrevWeeks?: Set<string>;
     forceCable: boolean;
+    preferEquipment?: Set<string>;
     rng: () => number;
   },
 ): number {
@@ -221,6 +222,11 @@ function scoreCandidate(
   // Si estamos forzando que haya polea hoy
   if (opts.forceCable && ex.equipment.slug === "polea") score += 100;
 
+  // Preferencias explícitas del user (equipment preferido en el wizard).
+  // Boost fuerte pero no blocker: cuando haya varios candidatos equivalentes
+  // elegimos el del equipo preferido.
+  if (opts.preferEquipment?.has(ex.equipment.slug)) score += 20;
+
   // Tiebreak determinístico
   score += opts.rng() * 2;
   return score;
@@ -233,10 +239,27 @@ export const RuleBasedGenerator: RoutineGenerator = {
     const rng = makeRng(seed);
     // Filtramos el catálogo según entorno. null → sin filtro (gym).
     const entorno = config.entorno ?? "gimnasio";
-    const allowed = equipmentForEntorno(entorno);
-    const usableCatalog = allowed
+    // En casa, equipmentPreferences agrega equipos extras al whitelist.
+    // En gimnasio es sólo preferencia de scoring, no filtro.
+    const extras = entorno === "casa" ? config.equipmentPreferences : undefined;
+    const allowed = equipmentForEntorno(entorno, extras);
+    let usableCatalog = allowed
       ? catalog.filter((e) => allowed.includes(e.equipment.slug))
       : catalog;
+    // avoidPlyo: filtra ejercicios con nombre/slug de salto. Útil sobre todo
+    // en casa_sin_equipo (depto abajo, articulaciones).
+    if (config.avoidPlyo) {
+      usableCatalog = usableCatalog.filter(
+        (e) => !esPlyo(e.nombre, e.slug),
+      );
+    }
+    // Set de equipos preferidos para el scoring (sólo en gym).
+    const preferEquipment =
+      entorno === "gimnasio" &&
+      config.equipmentPreferences &&
+      config.equipmentPreferences.length > 0
+        ? new Set(config.equipmentPreferences)
+        : undefined;
     const { templates, split } = pickSplit(
       config.diasPorSemana,
       config.nivel,
@@ -354,6 +377,7 @@ export const RuleBasedGenerator: RoutineGenerator = {
               preferredPrevWeek: finalPreferredPrevWeek,
               avoidPrevWeeks,
               forceCable,
+              preferEquipment,
               rng,
             }),
           }));

@@ -34,6 +34,9 @@ import {
   logSetOffline,
   startQueueSyncOnline,
 } from "@/modules/workouts/offline-queue";
+import { unlockAudio } from "@/modules/workouts/components/beep";
+import { useWakeLock } from "@/lib/use-wake-lock";
+import { PendingQueueChip } from "@/modules/workouts/components/PendingQueueChip";
 import {
   finishSessionOffline,
   saveSessionCache,
@@ -160,6 +163,17 @@ export function SessionView({
   // Arrancar sync offline al montar la vista
   useEffect(() => startQueueSyncOnline(), []);
   useEffect(() => startFinishSyncOnline(), []);
+  // Mantener la pantalla encendida durante toda la sesión (iOS re-adquiere
+  // al volver a foreground).
+  useWakeLock(true);
+  // Unlock del AudioContext en el primer tap: iOS lo mantiene suspended
+  // hasta que haya gesture del user. Sin esto el primer beep de fin de
+  // descanso no suena en modo normal.
+  useEffect(() => {
+    const unlock = () => unlockAudio();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
 
   // El banner de error de guardado está ligado al ejercicio donde pasó.
   // Si el user cambia de ejercicio, lo limpiamos para no confundir.
@@ -179,19 +193,28 @@ export function SessionView({
       lastLogsByExercise,
       substitutes,
     });
-    // Pre-fetch de las imágenes del día para que estén en el cache del SW.
-    for (const e of ejercicios) {
-      for (const url of e.exercise.media_frames ?? []) {
-        if (url) {
-          const img = new window.Image();
-          img.decoding = "async";
-          img.loading = "eager";
-          img.src = url;
+    // Pre-fetch acotado: sólo ejercicio actual y próximo, y nunca si el
+    // user activó Data Saver / red lenta (desperdiciábamos MB en 4G
+    // bajando frames de los 6-8 ejercicios siguientes).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const conn = (navigator as any).connection;
+    const saveData = conn?.saveData === true;
+    const slow =
+      conn?.effectiveType === "slow-2g" || conn?.effectiveType === "2g";
+    if (!saveData && !slow) {
+      const toPrefetch = [ejercicios[i], ejercicios[i + 1]].filter(Boolean);
+      for (const e of toPrefetch) {
+        for (const url of e.exercise.media_frames ?? []) {
+          if (url) {
+            const img = new window.Image();
+            img.decoding = "async";
+            img.src = url;
+          }
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+  }, [sessionId, i]);
   const [holdOpen, setHoldOpen] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
@@ -341,8 +364,9 @@ export function SessionView({
         if (prevLog) next.push(prevLog);
         return next;
       });
-      // Cerrar el rest timer que se abrió optimistamente.
-      if (data.completada && activeTipoRegistro !== "tiempo") setRest(null);
+      // No cerramos el rest timer: el descanso físico ya empezó y
+      // depende sólo de la decisión del user, no del server. Mostrar
+      // el error en la banner es suficiente — la cola intenta reenviar.
       setSaveError(res.error);
     } else {
       setSaveError(null);
@@ -456,13 +480,16 @@ export function SessionView({
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex min-w-0 flex-1 flex-col text-center">
+        <div className="flex min-w-0 flex-1 flex-col items-center text-center">
           <span className="truncate text-xs text-muted-foreground">
             {dayNombre}
           </span>
-          <span className="text-sm font-medium tabular-nums">
-            {i + 1} / {ejercicios.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium tabular-nums">
+              {i + 1} / {ejercicios.length}
+            </span>
+            <PendingQueueChip />
+          </div>
         </div>
         <div className="flex flex-none items-center gap-1">
           <button

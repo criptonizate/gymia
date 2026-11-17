@@ -111,12 +111,31 @@ export function SetRow({
   }
 
   useEffect(() => {
+    // Flush al ocultar la tab o bloquear pantalla: en PWA/iOS el SO
+    // puede matar el proceso antes de que el debounce de 300ms dispare,
+    // perdiendo el último valor tipeado. Lo forzamos acá.
+    function flushPending() {
+      const pending = pendingRef.current;
+      if (pending) {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
+        pendingRef.current = null;
+        onCommitRef.current(pending);
+      }
+    }
+    const onVis = () => {
+      if (document.visibilityState === "hidden") flushPending();
+    };
+    const onPageHide = () => flushPending();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", onPageHide);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
-        // Flush del último valor pendiente al desmontar (swipe entre
-        // ejercicios, salir de la sesión, etc) para no perder lo que el
-        // user tipeó.
         const pending = pendingRef.current;
         if (pending) onCommitRef.current(pending);
       }

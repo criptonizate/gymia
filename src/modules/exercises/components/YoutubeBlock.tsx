@@ -6,8 +6,10 @@ import { BottomSheet } from "@/components/bottom-sheet";
 import { Button } from "@/components/button";
 import { saveUserVideo, clearUserVideo } from "@/modules/exercises/actions";
 import {
+  PREFERRED_YT_CHANNEL,
   youtubeEmbedUrl,
   youtubeSearchUrl,
+  youtubeSearchUrlGlobal,
 } from "@/modules/exercises/youtube";
 
 type Props = {
@@ -86,10 +88,10 @@ export function YoutubeBlock({
             href={youtubeSearchUrl(youtubeQuery)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-accent"
+            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-[var(--primary-soft)] text-sm font-medium text-primary hover:bg-[var(--primary-soft-hover)]"
           >
-            <CirclePlay className="h-4 w-4 text-primary" />
-            Buscar en YouTube
+            <CirclePlay className="h-4 w-4" />
+            Buscar en {PREFERRED_YT_CHANNEL}
           </a>
         )}
         <button
@@ -100,6 +102,16 @@ export function YoutubeBlock({
           {userOwnsVideo ? "Cambiar mi video" : "Guardar mi video"}
         </button>
       </div>
+      {youtubeQuery && (
+        <a
+          href={youtubeSearchUrlGlobal(youtubeQuery)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-1 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        >
+          Buscar en todo YouTube
+        </a>
+      )}
 
       <BottomSheet
         open={open}

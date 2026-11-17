@@ -2,7 +2,11 @@
 
 import { CirclePlay } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { youtubeSearchUrl } from "@/modules/exercises/youtube";
+import {
+  PREFERRED_YT_CHANNEL,
+  youtubeSearchUrl,
+  youtubeSearchUrlGlobal,
+} from "@/modules/exercises/youtube";
 
 type Props = {
   open: boolean;
@@ -61,15 +65,25 @@ export function TechniqueSheet({
         )}
 
         {youtubeQuery && (
-          <a
-            href={youtubeSearchUrl(youtubeQuery)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)]"
-          >
-            <CirclePlay className="h-4 w-4" />
-            Buscar en YouTube
-          </a>
+          <div className="flex flex-col gap-2">
+            <a
+              href={youtubeSearchUrl(youtubeQuery)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-strong)]"
+            >
+              <CirclePlay className="h-4 w-4" />
+              Buscar en {PREFERRED_YT_CHANNEL}
+            </a>
+            <a
+              href={youtubeSearchUrlGlobal(youtubeQuery)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="self-center text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              Buscar en todo YouTube
+            </a>
+          </div>
         )}
       </div>
     </BottomSheet>

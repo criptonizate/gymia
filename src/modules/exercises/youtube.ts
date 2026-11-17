@@ -22,8 +22,29 @@ export function extractYouTubeId(input: string): string | null {
   return null;
 }
 
+/**
+ * Canal preferido para videos de técnica. Se usa como prefix en el search
+ * para que YouTube priorice contenido de ese canal.
+ */
+export const PREFERRED_YT_CHANNEL = "@oscarmolina6867";
+
+/**
+ * Busca en YouTube filtrando por el canal preferido. Si YouTube no tiene
+ * resultados del canal, igual muestra resultados generales abajo.
+ */
 export function youtubeSearchUrl(query: string): string {
+  const q = `${PREFERRED_YT_CHANNEL} ${query}`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+}
+
+/** Search sin filtro de canal — fallback cuando el canal no tiene el ejercicio. */
+export function youtubeSearchUrlGlobal(query: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}
+
+/** Link al canal preferido. */
+export function preferredChannelUrl(): string {
+  return `https://www.youtube.com/${PREFERRED_YT_CHANNEL}/videos`;
 }
 
 export function youtubeEmbedUrl(id: string): string {

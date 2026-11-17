@@ -9,13 +9,24 @@ type Props = {
 };
 
 export function YoutubePreview({ videoId, title }: Props) {
-  const frames = [
+  const fallback = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  const initialFrames = [
     `https://i.ytimg.com/vi/${videoId}/hq1.jpg`,
     `https://i.ytimg.com/vi/${videoId}/hq2.jpg`,
     `https://i.ytimg.com/vi/${videoId}/hq3.jpg`,
   ];
+  const [frames, setFrames] = useState(initialFrames);
   const [frame, setFrame] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  function onImgError(i: number) {
+    setFrames((prev) => {
+      if (prev[i] === fallback) return prev;
+      const next = [...prev];
+      next[i] = fallback;
+      return next;
+    });
+  }
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -38,7 +49,7 @@ export function YoutubePreview({ videoId, title }: Props) {
       <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
         {frames.map((src, i) => (
           <img
-            key={src}
+            key={i}
             src={src}
             alt={title ? `${title} preview` : "Vista previa"}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
@@ -46,6 +57,8 @@ export function YoutubePreview({ videoId, title }: Props) {
             }`}
             loading="lazy"
             decoding="async"
+            referrerPolicy="no-referrer"
+            onError={() => onImgError(i)}
           />
         ))}
         <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">

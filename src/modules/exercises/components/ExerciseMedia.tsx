@@ -13,6 +13,8 @@ type Props = {
   exerciseSlug?: string;
   /** Patrón del ejercicio (para fallback por patrón). */
   patron?: string;
+  /** videoId de YouTube: usado como miniatura animada cuando no hay media. */
+  youtubeVideoId?: string | null;
   alt: string;
   className?: string;
   /** Oculta el botón play/pause (útil para miniaturas). */
@@ -32,6 +34,7 @@ export function ExerciseMedia({
   muscleGroupSlug,
   exerciseSlug,
   patron,
+  youtubeVideoId,
   alt,
   className,
   minimal = false,
@@ -44,7 +47,17 @@ export function ExerciseMedia({
 
   const hasGif = !!mediaUrl;
   const usableFrames = (frames ?? []).filter(Boolean);
-  const canAlternate = !hasGif && usableFrames.length > 1;
+  const hasOwnFrames = usableFrames.length > 0;
+  const useYoutube = !hasGif && !hasOwnFrames && !!youtubeVideoId;
+  const ytFrames = useYoutube
+    ? [
+        `https://i.ytimg.com/vi/${youtubeVideoId}/hq1.jpg`,
+        `https://i.ytimg.com/vi/${youtubeVideoId}/hq2.jpg`,
+        `https://i.ytimg.com/vi/${youtubeVideoId}/hq3.jpg`,
+      ]
+    : [];
+  const canAlternate =
+    !hasGif && (usableFrames.length > 1 || ytFrames.length > 1);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -61,11 +74,12 @@ export function ExerciseMedia({
 
   useEffect(() => {
     if (!canAlternate || paused) return;
+    const frameCount = hasOwnFrames ? usableFrames.length : ytFrames.length;
     let t: ReturnType<typeof setInterval> | null = null;
     function start() {
       if (t) return;
       t = setInterval(() => {
-        setIdx((i) => (i + 1) % usableFrames.length);
+        setIdx((i) => (i + 1) % frameCount);
       }, INTERVAL_MS);
     }
     function stop() {
@@ -87,7 +101,45 @@ export function ExerciseMedia({
       document.removeEventListener("visibilitychange", onVis);
       stop();
     };
-  }, [canAlternate, paused, usableFrames.length]);
+  }, [canAlternate, paused, hasOwnFrames, usableFrames.length, ytFrames.length]);
+
+  if (useYoutube) {
+    return (
+      <button
+        type="button"
+        onClick={() => !minimal && setPaused((p) => !p)}
+        className={
+          "relative overflow-hidden bg-black " + (className ?? "")
+        }
+        aria-label={paused ? `${alt} (pausado, tocá para reanudar)` : alt}
+      >
+        {ytFrames.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt={i === 0 ? alt : ""}
+            className={`absolute inset-0 h-full w-full ${
+              fit === "contain" ? "object-contain" : "object-cover"
+            } transition-opacity duration-200 ${
+              i === idx % ytFrames.length ? "opacity-100" : "opacity-0"
+            }`}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.src = `https://i.ytimg.com/vi/${youtubeVideoId}/hqdefault.jpg`;
+            }}
+          />
+        ))}
+        {!minimal && (
+          <span className="pointer-events-none absolute bottom-1 right-1 rounded-full bg-black/55 p-1 text-white">
+            {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+          </span>
+        )}
+      </button>
+    );
+  }
 
   if (!hasGif && usableFrames.length === 0) {
     const glyph = exerciseGlyph({

@@ -14,6 +14,7 @@ export function ExerciseCard({ ex }: { ex: ExerciseWithRelations }) {
         muscleGroupSlug={ex.muscle_group.slug}
         exerciseSlug={ex.slug}
         patron={ex.patron}
+        youtubeVideoId={ex.youtube_video_id}
         alt={ex.nombre}
         className="h-16 w-16 flex-none rounded-xl"
         sizes="64px"

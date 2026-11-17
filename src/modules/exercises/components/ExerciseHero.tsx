@@ -12,6 +12,7 @@ type Props = {
   mediaUrl: string | null;
   frames: string[];
   muscleGroupSlug: string;
+  youtubeVideoId?: string | null;
   instrucciones: string[];
   erroresComunes: string[];
   youtubeQuery: string | null;
@@ -24,6 +25,7 @@ export function ExerciseHero({
   mediaUrl,
   frames,
   muscleGroupSlug,
+  youtubeVideoId,
   instrucciones,
   erroresComunes,
   youtubeQuery,
@@ -43,6 +45,7 @@ export function ExerciseHero({
           muscleGroupSlug={muscleGroupSlug}
           exerciseSlug={slug}
           patron={patron}
+          youtubeVideoId={youtubeVideoId}
           alt={nombre}
           className="aspect-square w-full"
         />

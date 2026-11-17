@@ -102,6 +102,7 @@ export default async function EjercicioDetallePage({
         mediaUrl={ex.media_url}
         frames={ex.media_frames}
         muscleGroupSlug={ex.muscle_group.slug}
+        youtubeVideoId={effectiveVideoId}
         instrucciones={ex.instrucciones}
         erroresComunes={ex.errores_comunes}
         youtubeQuery={ex.youtube_query}

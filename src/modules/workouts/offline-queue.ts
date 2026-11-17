@@ -10,6 +10,11 @@ const DB_NAME = "gymia-offline";
 const DB_VERSION = 2;
 const STORE = "log_set_queue";
 const MAX_TRIES = 5;
+// Timeout para la call al server action. Server actions usan el fetch
+// interno de Next que no respeta el timeout de createClient — lo
+// aplicamos en el llamador con Promise.race para que en 4G degradado
+// no esperemos 30s antes de clasificar como red.
+const ACTION_TIMEOUT_MS = 8000;
 
 type Entry = {
   id: string;
@@ -17,6 +22,7 @@ type Entry = {
   payload: LogSetInput;
   tries: number;
   created_at: number;
+  next_attempt_at?: number;
 };
 
 function openDb(): Promise<IDBDatabase> {
@@ -27,8 +33,6 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "id" });
       }
-      // Stores agregados en v2 (session_cache, finish_queue) los crea
-      // offline-session.ts si no existen.
       if (!db.objectStoreNames.contains("session_cache")) {
         db.createObjectStore("session_cache", { keyPath: "key" });
       }
@@ -100,8 +104,39 @@ export async function clearOfflineQueue(): Promise<void> {
   }
 }
 
+/** Cantidad de items encolados para el user actual. Para la chip de UI. */
+export async function countPending(): Promise<number> {
+  try {
+    const uid = await getOfflineUserId();
+    if (!uid) return 0;
+    const items = await getAll();
+    return items.filter((i) => i.user_id === uid).length;
+  } catch {
+    return 0;
+  }
+}
+
 async function currentUserId(): Promise<string | null> {
   return getOfflineUserId();
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(
+      () => reject(new Error("timeout")),
+      ms,
+    );
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
 }
 
 let drainingPromise: Promise<void> | null = null;
@@ -115,17 +150,19 @@ export async function drainQueue(): Promise<void> {
       const uid = await currentUserId();
       if (!uid) return;
       const items = await getAll();
+      const now = Date.now();
       for (const it of items) {
-        // Namespacing: no reenviar items de OTRO user con las credenciales de este.
         if (it.user_id !== uid) {
           if (it.tries + 1 >= MAX_TRIES) await remove(it.id);
           else await update({ ...it, tries: it.tries + 1 });
           continue;
         }
+        // Backoff: respetar next_attempt_at.
+        if (it.next_attempt_at && it.next_attempt_at > now) continue;
         let errMsg: string | null = null;
         let threw = false;
         try {
-          const r = await logSet(it.payload);
+          const r = await withTimeout(logSet(it.payload), ACTION_TIMEOUT_MS);
           if (r.ok) {
             await remove(it.id);
             continue;
@@ -135,22 +172,30 @@ export async function drainQueue(): Promise<void> {
           threw = true;
           errMsg = e instanceof Error ? e.message : String(e);
         }
-        // Clasificación: un fallo de red (fetch roto, timeout) NO debe
-        // contar como intento consumido — el user quiere que lo volvamos
-        // a probar cuando haya buena conexión. Si fue error de servidor
-        // / validación / RLS sí incrementamos tries y descartamos a los
-        // MAX_TRIES para no dejar basura para siempre.
         const esRed =
-          threw || /network|fetch|load failed|timeout|offline/i.test(errMsg ?? "");
+          threw ||
+          /network|fetch|load failed|timeout|offline/i.test(errMsg ?? "");
         if (esRed) {
-          // Dejamos la entrada como está y abortamos el drain; probaremos
-          // otra vez cuando dispare el próximo evento "online".
+          // Red mala: no consumimos retry, pero sí ponemos backoff para
+          // no martillar.
+          await update({
+            ...it,
+            next_attempt_at: now + 15000 + Math.random() * 5000,
+          });
           return;
         }
-        await update({ ...it, tries: it.tries + 1 });
-        if (it.tries + 1 >= MAX_TRIES) await remove(it.id);
-        // Seguimos con el siguiente en vez de abortar: un item roto no
-        // debe bloquear a los demás.
+        // Error de server: consumimos retry con backoff exponencial.
+        const nextTries = it.tries + 1;
+        if (nextTries >= MAX_TRIES) {
+          await remove(it.id);
+        } else {
+          const delay = Math.min(5 * 60_000, 2 ** nextTries * 1000);
+          await update({
+            ...it,
+            tries: nextTries,
+            next_attempt_at: now + delay + Math.random() * 1000,
+          });
+        }
       }
     } finally {
       drainingPromise = null;
@@ -170,15 +215,15 @@ export async function logSetOffline(
   const online = typeof window !== "undefined" && navigator.onLine;
 
   if (online) {
-    const r = await logSet(payload);
-    if (r.ok) return { ok: true, queued: false };
-    // Si el error es claramente de red (TypeError de fetch), encolamos.
-    // Si es un error de validación / RLS / FK, lo propagamos para que la UI
-    // lo muestre en vez de "guardar" en silencio una cola que luego también
-    // va a fallar.
-    const msg = r.error ?? "No se pudo guardar la serie.";
-    const esRed = /network|fetch|load failed|timeout/i.test(msg);
-    if (!esRed) return { ok: false, error: msg };
+    try {
+      const r = await withTimeout(logSet(payload), ACTION_TIMEOUT_MS);
+      if (r.ok) return { ok: true, queued: false };
+      const msg = r.error ?? "No se pudo guardar la serie.";
+      const esRed = /network|fetch|load failed|timeout/i.test(msg);
+      if (!esRed) return { ok: false, error: msg };
+    } catch {
+      // Timeout o fallo de red → cae al encolado abajo.
+    }
   }
 
   const entry: Entry = {
@@ -201,7 +246,21 @@ export async function logSetOffline(
 export function startQueueSyncOnline(): () => void {
   if (typeof window === "undefined") return () => undefined;
   const handler = () => void drainQueue();
+  const visHandler = () => {
+    if (document.visibilityState === "visible") void drainQueue();
+  };
   window.addEventListener("online", handler);
+  document.addEventListener("visibilitychange", visHandler);
+  // Reintentar cada 30s mientras la app esté viva: cubre el caso de
+  // `online` que no re-dispara si nunca pasó a offline (packet loss
+  // silencioso) y de items con backoff que hay que destrabar.
+  const interval = window.setInterval(() => {
+    if (document.visibilityState === "visible") void drainQueue();
+  }, 30000);
   void drainQueue();
-  return () => window.removeEventListener("online", handler);
+  return () => {
+    window.removeEventListener("online", handler);
+    document.removeEventListener("visibilitychange", visHandler);
+    clearInterval(interval);
+  };
 }

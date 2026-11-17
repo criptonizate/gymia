@@ -5,9 +5,9 @@ import { CirclePlay, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Button } from "@/components/button";
 import { saveUserVideo, clearUserVideo } from "@/modules/exercises/actions";
+import { YoutubePreview } from "@/modules/exercises/components/YoutubePreview";
 import {
   PREFERRED_YT_CHANNEL,
-  youtubeEmbedUrl,
   youtubeSearchUrl,
   youtubeSearchUrlGlobal,
 } from "@/modules/exercises/youtube";
@@ -57,18 +57,10 @@ export function YoutubeBlock({
       <h2 className="text-sm font-semibold text-muted-foreground">Video</h2>
 
       {videoId ? (
-        <div className="overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="relative aspect-video">
-            <iframe
-              src={youtubeEmbedUrl(videoId)}
-              title="YouTube"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full"
-            />
-          </div>
+        <div className="flex flex-col gap-2">
+          <YoutubePreview videoId={videoId} />
           {userOwnsVideo && (
-            <div className="flex items-center justify-between px-3 py-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
               <span>Tu video de referencia</span>
               <button
                 onClick={onClear}

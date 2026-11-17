@@ -61,10 +61,32 @@ export function ExerciseMedia({
 
   useEffect(() => {
     if (!canAlternate || paused) return;
-    const t = setInterval(() => {
-      setIdx((i) => (i + 1) % usableFrames.length);
-    }, INTERVAL_MS);
-    return () => clearInterval(t);
+    let t: ReturnType<typeof setInterval> | null = null;
+    function start() {
+      if (t) return;
+      t = setInterval(() => {
+        setIdx((i) => (i + 1) % usableFrames.length);
+      }, INTERVAL_MS);
+    }
+    function stop() {
+      if (t) {
+        clearInterval(t);
+        t = null;
+      }
+    }
+    // Pausamos cuando la tab no está visible: evita gasto de CPU/batería
+    // en background (iOS la congela igual, pero esto además evita el
+    // burst de actualizaciones al volver).
+    if (document.visibilityState === "visible") start();
+    const onVis = () => {
+      if (document.visibilityState === "visible") start();
+      else stop();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      stop();
+    };
   }, [canAlternate, paused, usableFrames.length]);
 
   if (!hasGif && usableFrames.length === 0) {

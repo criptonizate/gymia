@@ -15,11 +15,12 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const BASE =
   "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold " +
-  "transition-[transform,background-color,border-color,opacity,box-shadow] duration-150 " +
-  "active:scale-[0.97] active:duration-75 " +
+  "transition-[transform,background-color,border-color,opacity,box-shadow,filter] duration-150 " +
+  "active:scale-[0.94] active:brightness-90 active:duration-[20ms] " +
   "disabled:pointer-events-none disabled:opacity-60 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background " +
-  "motion-reduce:active:scale-100";
+  "motion-reduce:active:scale-100 motion-reduce:active:brightness-100 " +
+  "touch-manipulation";
 
 const VARIANTS: Record<Variant, string> = {
   primary:

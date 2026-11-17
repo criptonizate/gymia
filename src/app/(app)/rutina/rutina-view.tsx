@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Plus, RefreshCw, Settings, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -32,6 +32,13 @@ export function RutinaView({ routine }: Props) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+
+  // Las dos nav más probables desde acá: volver a /hoy o ir a /generar.
+  // Precargarlas hace que el click sea instantáneo.
+  useEffect(() => {
+    router.prefetch("/hoy");
+    router.prefetch("/generar");
+  }, [router]);
 
   const diasDeSemana = routine.dias.filter((d) => d.semana === sem);
 

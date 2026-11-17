@@ -51,11 +51,24 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
     className,
     children,
     type = "button",
+    onPointerDown,
     ...rest
   },
   ref,
 ) {
   const isDisabled = disabled || loading;
+  function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    // Haptic mínimo (8ms) al tocar. Confirma físicamente el press en móvil.
+    // navigator.vibrate es no-op en browsers que no la soportan.
+    if (!isDisabled && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate(8);
+      } catch {
+        // noop
+      }
+    }
+    onPointerDown?.(e);
+  }
   return (
     <button
       ref={ref}
@@ -63,6 +76,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       aria-busy={loading || undefined}
       aria-disabled={isDisabled || undefined}
       disabled={isDisabled}
+      onPointerDown={handlePointerDown}
       className={cn(
         BASE,
         VARIANTS[variant],

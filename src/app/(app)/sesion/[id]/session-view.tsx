@@ -88,6 +88,11 @@ export function SessionView({
   substitutes,
 }: Props) {
   const router = useRouter();
+  // /hoy es el destino al terminar o descartar: prefetch para que la
+  // navegación sea instantánea.
+  useEffect(() => {
+    router.prefetch("/hoy");
+  }, [router]);
   const [i, setI] = useState(0);
   const [logs, setLogs] = useState<SetLog[]>(initialLogs);
   // Hidratar overrides desde los sustitutos persistidos (recarga sesión abierta)

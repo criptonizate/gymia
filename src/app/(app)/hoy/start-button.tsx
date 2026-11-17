@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Play } from "lucide-react";
 import { Button } from "@/components/button";
@@ -15,6 +15,12 @@ export function StartButton({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+
+  // Si hay sesión abierta, prefetcheamos su ruta: cuando el user toca el
+  // botón, la página ya está en cache y la nav es inmediata.
+  useEffect(() => {
+    if (openSessionId) router.prefetch(`/sesion/${openSessionId}`);
+  }, [openSessionId, router]);
 
   function onClick() {
     if (openSessionId) {
